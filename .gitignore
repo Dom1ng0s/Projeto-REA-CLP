@@ -1,0 +1,26 @@
+# Ambiente Virtual
+venv/
+env/
+.venv/
+nexos_rea_backend/venv/
+
+# Variáveis de Ambiente e Segredos
+.env
+.flaskenv
+*.env
+
+# Arquivos compilados do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Configurações de IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
