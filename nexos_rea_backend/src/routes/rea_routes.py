@@ -1,0 +1,41 @@
+from flask import Blueprint, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from src.services import rea_service
+from src.utils.responses import error, success
+
+rea_bp = Blueprint("reas", __name__)
+
+
+@rea_bp.get("/")
+def list_reas():
+    q = request.args.get("q", "").strip() or None
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+        per_page = max(1, int(request.args.get("per_page", 10)))
+    except ValueError:
+        return error("Parâmetros de paginação inválidos.", 400)
+
+    result = rea_service.list_reas(q=q, page=page, per_page=per_page)
+    return success(data=result)
+
+
+@rea_bp.get("/<string:rea_id>")
+def get_rea(rea_id: str):
+    try:
+        rea = rea_service.get_rea(rea_id)
+        return success(data=rea)
+    except ValueError as e:
+        return error(str(e), 404)
+
+
+@rea_bp.post("/")
+@jwt_required()
+def submit_rea():
+    body = request.get_json(silent=True) or {}
+    user_id = get_jwt_identity()
+    try:
+        rea = rea_service.submit_rea(data=body, user_id=user_id)
+        return success(data=rea, status=201)
+    except ValueError as e:
+        return error(str(e), 400)
