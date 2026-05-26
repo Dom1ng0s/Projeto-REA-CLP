@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager
 from src.config import Config
 from src.extensions.database import db
 from src.models import models  # noqa: F401 — importado para registrar os modelos no SQLAlchemy
+from src.routes.auth_routes import auth_bp
 
 
 def create_app(config_class=Config):
@@ -16,8 +17,7 @@ def create_app(config_class=Config):
     with app.app_context():
         db.create_all()
 
-    # Rotas serão registradas aqui nas próximas etapas
-    # app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
     return app
 
