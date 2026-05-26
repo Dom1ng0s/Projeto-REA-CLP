@@ -18,6 +18,10 @@ def find_by_id(rea_id) -> REA | None:
     return db.session.get(REA, rea_id)
 
 
+def find_by_url(url: str) -> REA | None:
+    return db.session.execute(db.select(REA).where(REA.url == url)).scalar_one_or_none()
+
+
 def create(data: dict) -> REA:
     rea = REA(**data)
     db.session.add(rea)

@@ -28,6 +28,11 @@ def get_rea(rea_id: str) -> dict:
 
 def submit_rea(data: dict, user_id: str) -> dict:
     _validate(data)
+
+    url = data["url"].strip()
+    if rea_repository.find_by_url(url):
+        raise ValueError("Já existe um REA cadastrado com essa URL.")
+
     rea = rea_repository.create({
         "title": data["title"].strip(),
         "description": data["description"].strip(),

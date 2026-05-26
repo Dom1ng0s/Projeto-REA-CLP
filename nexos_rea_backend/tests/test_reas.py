@@ -120,3 +120,11 @@ def test_submit_rea_invalid_type(client):
     r = _submit(client, token, {**_VALID_REA, "resource_type": "tipo_invalido"})
     assert r.status_code == 400
     assert "Tipo inválido" in r.get_json()["message"]
+
+
+def test_submit_rea_duplicate_url(client):
+    token = _token(client)
+    _submit(client, token)
+    r = _submit(client, token)
+    assert r.status_code == 400
+    assert "URL" in r.get_json()["message"]

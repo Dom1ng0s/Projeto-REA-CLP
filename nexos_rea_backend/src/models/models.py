@@ -64,7 +64,7 @@ class REA(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = db.Column(db.String(300), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    url = db.Column(db.String(500), nullable=False)
+    url = db.Column(db.String(500), nullable=False, unique=True)
     author = db.Column(db.String(200))
     license = db.Column(db.String(100), nullable=False)
     resource_type = db.Column(db.String(50), nullable=False)
