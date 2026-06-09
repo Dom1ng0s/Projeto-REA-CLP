@@ -20,6 +20,19 @@ def list_interests(user_id: uuid.UUID) -> list[UserTagInterest]:
     return list(result.scalars())
 
 
+def upsert_weight(user_id: uuid.UUID, tag_id: int, delta: float) -> None:
+    interest = db.session.get(UserTagInterest, (user_id, tag_id))
+    if interest:
+        interest.weight = max(0.1, min(10.0, interest.weight + delta))
+    elif delta > 0:
+        db.session.add(UserTagInterest(
+            user_id=user_id,
+            tag_id=tag_id,
+            weight=min(10.0, 1.0 + delta),
+        ))
+    db.session.commit()
+
+
 def replace_interests(user_id: uuid.UUID, interesses: list[dict]) -> list[UserTagInterest]:
     db.session.execute(
         db.delete(UserTagInterest).where(UserTagInterest.user_id == user_id)

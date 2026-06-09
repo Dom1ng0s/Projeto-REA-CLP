@@ -1,5 +1,9 @@
+import uuid
+
+from sqlalchemy import func
+
 from src.extensions.database import db
-from src.models.models import REA
+from src.models.models import REA, REATag, UserTagInterest
 
 
 def list_visible(q: str | None, page: int, per_page: int):
@@ -14,12 +18,54 @@ def list_visible(q: str | None, page: int, per_page: int):
     return db.paginate(query, page=page, per_page=per_page, error_out=False)
 
 
+def list_recommended(user_id: uuid.UUID, limit: int) -> list[tuple]:
+    score_subq = (
+        db.select(
+            REATag.rea_id,
+            func.coalesce(func.sum(UserTagInterest.weight), 0.0).label("score"),
+        )
+        .outerjoin(
+            UserTagInterest,
+            (UserTagInterest.tag_id == REATag.tag_id)
+            & (UserTagInterest.user_id == user_id),
+        )
+        .group_by(REATag.rea_id)
+        .subquery()
+    )
+
+    query = (
+        db.select(REA, func.coalesce(score_subq.c.score, 0.0).label("relevance_score"))
+        .outerjoin(score_subq, score_subq.c.rea_id == REA.id)
+        .where(REA.is_visible == True, REA.is_blocked == False)
+        .order_by(
+            func.coalesce(score_subq.c.score, 0.0).desc(),
+            REA.avg_rating.desc(),
+        )
+        .limit(limit)
+    )
+
+    return list(db.session.execute(query))
+
+
 def find_by_id(rea_id) -> REA | None:
     return db.session.get(REA, rea_id)
 
 
+def find_tags(rea_id: uuid.UUID) -> list[REATag]:
+    result = db.session.execute(db.select(REATag).where(REATag.rea_id == rea_id))
+    return list(result.scalars())
+
+
 def find_by_url(url: str) -> REA | None:
     return db.session.execute(db.select(REA).where(REA.url == url)).scalar_one_or_none()
+
+
+def add_tags(rea_id: uuid.UUID, tag_ids: list[int]) -> None:
+    existing = {rt.tag_id for rt in find_tags(rea_id)}
+    for tag_id in tag_ids:
+        if tag_id not in existing:
+            db.session.add(REATag(rea_id=rea_id, tag_id=tag_id))
+    db.session.commit()
 
 
 def create(data: dict) -> REA:
