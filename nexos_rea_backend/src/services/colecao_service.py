@@ -1,6 +1,7 @@
 import uuid
 
 from src.repositories import colecao_repository, rea_repository
+from src.services import interacao_service
 
 
 def criar_colecao(user_id: str, data: dict) -> dict:
@@ -53,6 +54,7 @@ def adicionar_rea(user_id: str, collection_id: str, rea_id: str) -> dict:
         raise ValueError("Este REA já está na coleção.")
 
     item = colecao_repository.add_item(cid, rid)
+    interacao_service.recalcular_pesos(user_id, rea_id, "adicionar_colecao")
     return {
         "collection_id": str(item.collection_id),
         "rea_id": str(item.rea_id),
@@ -75,6 +77,7 @@ def remover_rea(user_id: str, collection_id: str, rea_id: str) -> None:
         raise LookupError("REA não encontrado nesta coleção.")
 
     colecao_repository.remove_item(item)
+    interacao_service.recalcular_pesos(user_id, rea_id, "remover_colecao")
 
 
 # --- helpers privados ---

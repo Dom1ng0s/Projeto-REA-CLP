@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from src.services import rea_service
+from src.services import interacao_service, rea_service
 from src.utils.responses import error, success
 
 rea_bp = Blueprint("reas", __name__)
@@ -37,5 +37,45 @@ def submit_rea():
     try:
         rea = rea_service.submit_rea(data=body, user_id=user_id)
         return success(data=rea, status=201)
+    except ValueError as e:
+        return error(str(e), 400)
+
+
+@rea_bp.post("/<string:rea_id>/visualizacao")
+@jwt_required()
+def registrar_visualizacao(rea_id: str):
+    user_id = get_jwt_identity()
+    try:
+        rea_service.get_rea(rea_id)
+        interacao_service.recalcular_pesos(user_id, rea_id, "visualizacao")
+        return success(message="Visualização registrada.")
+    except ValueError as e:
+        return error(str(e), 404)
+
+
+@rea_bp.post("/<string:rea_id>/avaliacoes")
+@jwt_required()
+def avaliar_rea(rea_id: str):
+    body = request.get_json(silent=True) or {}
+    user_id = get_jwt_identity()
+    try:
+        rea = rea_service.avaliar_rea(data=body, rea_id=rea_id, user_id=user_id)
+        return success(data=rea, status=201)
+    except LookupError as e:
+        return error(str(e), 404)
+    except ValueError as e:
+        return error(str(e), 400)
+
+
+@rea_bp.post("/<string:rea_id>/tags")
+@jwt_required()
+def classificar_rea(rea_id: str):
+    body = request.get_json(silent=True) or {}
+    user_id = get_jwt_identity()
+    try:
+        result = rea_service.classificar_rea(rea_id=rea_id, data=body, user_id=user_id)
+        return success(data=result)
+    except LookupError as e:
+        return error(str(e), 404)
     except ValueError as e:
         return error(str(e), 400)

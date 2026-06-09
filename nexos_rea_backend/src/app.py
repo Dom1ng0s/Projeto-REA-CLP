@@ -8,6 +8,7 @@ from src.routes.auth_routes import auth_bp
 from src.routes.colecoes_routes import colecoes_bp
 from src.routes.perfil_routes import perfil_bp
 from src.routes.rea_routes import rea_bp
+from src.routes.recomendacao_routes import recomendacao_bp
 
 
 def create_app(config_class=Config):
@@ -24,6 +25,7 @@ def create_app(config_class=Config):
     app.register_blueprint(rea_bp, url_prefix="/api/reas")
     app.register_blueprint(colecoes_bp, url_prefix="/api/colecoes")
     app.register_blueprint(perfil_bp, url_prefix="/api/perfil")
+    app.register_blueprint(recomendacao_bp, url_prefix="/api/recomendacoes")
 
     return app
 
