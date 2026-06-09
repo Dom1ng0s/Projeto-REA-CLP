@@ -1,26 +1,33 @@
 from flask import Flask
-from src.config import Config
-from src.infrastructure.database import db
+from flask_jwt_extended import JWTManager
 
-# Importamos os modelos para que o SQLAlchemy crie as tabelas corretamente
-from src.domain.models import models
+from src.config import Config
+from src.extensions.database import db
+from src.models import models  # noqa: F401 — importado para registrar os modelos no SQLAlchemy
+from src.routes.auth_routes import auth_bp
+from src.routes.colecoes_routes import colecoes_bp
+from src.routes.perfil_routes import perfil_bp
+from src.routes.rea_routes import rea_bp
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Liga a infraestrutura de base de dados à aplicação
     db.init_app(app)
+    JWTManager(app)
 
     with app.app_context():
-        # Cria as tabelas na base de dados se não existirem
         db.create_all()
 
-    # (AQUI: na Sprint 2 vamos registar as rotas de autenticação)
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(rea_bp, url_prefix="/api/reas")
+    app.register_blueprint(colecoes_bp, url_prefix="/api/colecoes")
+    app.register_blueprint(perfil_bp, url_prefix="/api/perfil")
 
     return app
 
-# Bloco de execução para quando rodarmos localmente
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

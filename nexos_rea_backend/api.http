@@ -1,0 +1,122 @@
+# Nexos REA Backend — Testes de API
+# Extensão necessária: REST Client (humao.rest-client) no VS Code
+# Para rodar: clique em "Send Request" acima de cada bloco
+
+@base = http://localhost:5000
+@token = COLE_SEU_TOKEN_AQUI
+
+### ── AUTH ──────────────────────────────────────────────────────────────── ###
+
+### Registrar usuário
+POST {{base}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Ana Souza",
+  "email": "ana@exemplo.com",
+  "password": "senha123"
+}
+
+### Login (copie o access_token e cole em @token acima)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "ana@exemplo.com",
+  "password": "senha123"
+}
+
+### Meu perfil (requer token)
+GET {{base}}/api/auth/me
+Authorization: Bearer {{token}}
+
+
+### ── REAs ───────────────────────────────────────────────────────────────── ###
+
+### Listar todos os REAs
+GET {{base}}/api/reas/
+
+### Buscar por título
+GET {{base}}/api/reas/?q=python
+
+### Paginação (página 1, 3 por página)
+GET {{base}}/api/reas/?page=1&per_page=3
+
+### Busca + paginação
+GET {{base}}/api/reas/?q=algebra&page=1&per_page=5
+
+### Buscar REA por ID (substitua pelo ID real)
+GET {{base}}/api/reas/00000000-0000-0000-0000-000000000000
+
+### Submeter novo REA (requer token)
+POST {{base}}/api/reas/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Cálculo Diferencial e Integral",
+  "description": "Curso completo com videoaulas e exercícios resolvidos.",
+  "url": "https://exemplo.com/calculo",
+  "license": "CC BY 4.0",
+  "resource_type": "course"
+}
+
+### Submeter REA com todos os campos opcionais
+POST {{base}}/api/reas/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Algoritmos e Estruturas de Dados",
+  "description": "Material para graduação com implementações em Python.",
+  "url": "https://exemplo.com/algoritmos",
+  "license": "CC BY-SA 4.0",
+  "resource_type": "ebook",
+  "author": "Prof. Carlos Lima",
+  "language": "pt-BR",
+  "thumbnail_url": "https://exemplo.com/thumb.jpg"
+}
+
+### ── ERROS (para testar validações) ─────────────────────────────────────── ###
+
+### Registrar sem nome (deve retornar 400)
+POST {{base}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "sem@nome.com",
+  "password": "senha123"
+}
+
+### Login com senha errada (deve retornar 401)
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "ana@exemplo.com",
+  "password": "senhaerrada"
+}
+
+### Submeter REA sem token (deve retornar 401)
+POST {{base}}/api/reas/
+Content-Type: application/json
+
+{
+  "title": "Teste sem auth",
+  "url": "https://exemplo.com",
+  "license": "CC BY 4.0",
+  "resource_type": "video"
+}
+
+### Submeter REA com tipo inválido (deve retornar 400)
+POST {{base}}/api/reas/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "REA Teste",
+  "description": "Desc",
+  "url": "https://exemplo.com/teste",
+  "license": "CC BY 4.0",
+  "resource_type": "tipo_invalido"
+}

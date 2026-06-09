@@ -21,6 +21,11 @@ __pycache__/
 *.swp
 *.swo
 
+# Banco de dados SQLite e pasta instance do Flask
+*.db
+*.sqlite3
+instance/
+
 # Arquivos do Sistema Operacional
 .DS_Store
 Thumbs.db
