@@ -128,3 +128,28 @@ def test_submit_rea_duplicate_url(client):
     r = _submit(client, token)
     assert r.status_code == 400
     assert "URL" in r.get_json()["message"]
+
+def test_submit_rea_url_invalida_deve_retornar_400_qa(client):
+    """Garante que o Controle de Qualidade recusa strings mal formatadas na URL"""
+    token = _token(client)
+
+    payload_invalido = _VALID_REA.copy()
+    payload_invalido["url"] = "link-completamente-quebrado-sem-http"
+    
+    r = _submit(client, token, data=payload_invalido)
+    
+    assert r.status_code == 400
+    assert "Controle de Qualidade Recusado" in r.get_json()["message"]
+
+
+def test_submit_rea_url_valida_formatos_aceitos_qa(client):
+    """Garante que URLs legítimas (com protocolo e domínio) passam com sucesso"""
+    token = _token(client)
+    
+    payload_valido = _VALID_REA.copy()
+    payload_valido["url"] = "https://subdominio.educacao.org/material-didatico"
+    
+    r = _submit(client, token, data=payload_valido)
+    
+    assert r.status_code == 201
+    assert r.get_json()["success"] is True

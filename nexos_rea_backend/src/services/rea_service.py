@@ -1,4 +1,5 @@
 import uuid
+import re
 
 from src.extensions.database import db
 from src.models.models import Rating
@@ -134,6 +135,14 @@ def _get_visible_or_raise(rea_id: str):
         raise ValueError("REA não encontrado.")
     return rea
 
+_URL_REGEX = re.compile(
+    r'^https?://'
+    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
+    r'localhost|'
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    r'(?::\d+)?'
+    r'(?:/?|[/?]\S+)$', re.IGNORECASE
+)
 
 def _validate(data: dict) -> None:
     required = ["title", "description", "url", "license", "resource_type"]
@@ -144,6 +153,9 @@ def _validate(data: dict) -> None:
     if data["resource_type"].strip().lower() not in _ALLOWED_TYPES:
         raise ValueError(f"Tipo inválido. Use: {', '.join(sorted(_ALLOWED_TYPES))}.")
 
+    url = data["url"].strip()
+    if not _URL_REGEX.match(url):
+        raise ValueError("Controle de Qualidade Recusado: A URL fornecida é inválida ou está mal formatada.")
 
 def _serialize(rea) -> dict:
     return {
@@ -161,3 +173,4 @@ def _serialize(rea) -> dict:
         "submitted_by": str(rea.submitted_by) if rea.submitted_by else None,
         "created_at": rea.created_at.isoformat(),
     }
+    

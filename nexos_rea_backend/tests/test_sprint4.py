@@ -203,3 +203,20 @@ def test_recomendacoes_com_perfil_retorna_score(client):
     assert "relevance_score" in items[0]
     assert items[0]["relevance_score"] >= items[1]["relevance_score"]
     assert items[0]["title"] == _REA_PYTHON["title"]
+
+def test_classificar_rea_com_tag_inexistente_deve_retornar_404_qa(client):
+    """Garante que associar uma Tag com ID fantasma falha na validação do repositório"""
+    token = _register_and_login(client, _USER_A)
+
+    rea = _submit(client, token, _REA_PYTHON)
+    
+    payload_tag_fantasma = {"tag_ids": [9999]}
+    
+    r = client.post(
+        f"/api/reas/{rea['id']}/tags", 
+        json=payload_tag_fantasma, 
+        headers=_auth(token)
+    )
+    
+    assert r.status_code == 404
+    assert "não encontrada" in r.get_json()["message"]
