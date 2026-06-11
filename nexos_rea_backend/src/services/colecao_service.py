@@ -7,9 +7,9 @@ from src.services import interacao_service
 def criar_colecao(user_id: str, data: dict) -> dict:
     name = data.get("name", "").strip()
     if not name:
-        raise ValueError("O campo 'name' é obrigatório.")
+        raise ValueError("O campo 'name' e obrigatorio.")
     if len(name) > 200:
-        raise ValueError("O nome deve ter no máximo 200 caracteres.")
+        raise ValueError("O nome deve ter no maximo 200 caracteres.")
 
     col = colecao_repository.create(
         user_id=uuid.UUID(user_id),
@@ -43,15 +43,15 @@ def adicionar_rea(user_id: str, collection_id: str, rea_id: str) -> dict:
     try:
         rid = uuid.UUID(rea_id)
     except (ValueError, AttributeError):
-        raise ValueError("ID de REA inválido.")
+        raise ValueError("ID de REA invalido.")
 
     rea = rea_repository.find_by_id(rid)
     if not rea or not rea.is_visible or rea.is_blocked:
-        raise LookupError("REA não encontrado.")
+        raise LookupError("REA nao encontrado.")
 
     cid = uuid.UUID(collection_id)
     if colecao_repository.find_item(cid, rid):
-        raise ValueError("Este REA já está na coleção.")
+        raise ValueError("Este REA ja esta na colecao.")
 
     item = colecao_repository.add_item(cid, rid)
     interacao_service.recalcular_pesos(user_id, rea_id, "adicionar_colecao")
@@ -70,11 +70,11 @@ def remover_rea(user_id: str, collection_id: str, rea_id: str) -> None:
         cid = uuid.UUID(collection_id)
         rid = uuid.UUID(rea_id)
     except (ValueError, AttributeError):
-        raise ValueError("ID inválido.")
+        raise ValueError("ID invalido.")
 
     item = colecao_repository.find_item(cid, rid)
     if not item:
-        raise LookupError("REA não encontrado nesta coleção.")
+        raise LookupError("REA nao encontrado nesta colecao.")
 
     colecao_repository.remove_item(item)
     interacao_service.recalcular_pesos(user_id, rea_id, "remover_colecao")
@@ -86,11 +86,11 @@ def _get_or_raise(collection_id: str):
     try:
         cid = uuid.UUID(collection_id)
     except (ValueError, AttributeError):
-        raise LookupError("Coleção não encontrada.")
+        raise LookupError("Colecao nao encontrada.")
 
     col = colecao_repository.find_by_id(cid)
     if not col:
-        raise LookupError("Coleção não encontrada.")
+        raise LookupError("Colecao nao encontrada.")
     return col
 
 

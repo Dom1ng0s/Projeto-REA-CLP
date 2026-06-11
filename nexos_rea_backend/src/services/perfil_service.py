@@ -22,7 +22,7 @@ def atualizar_interesses(user_id: str, payload: list) -> list[dict]:
 
     for idx, item in enumerate(payload):
         if not isinstance(item, dict):
-            raise ValueError(f"Item {idx}: formato inválido.")
+            raise ValueError(f"Item {idx}: formato invalido.")
 
         tag_id = item.get("tag_id")
         if not isinstance(tag_id, int) or tag_id <= 0:
@@ -35,14 +35,14 @@ def atualizar_interesses(user_id: str, payload: list) -> list[dict]:
         try:
             weight = float(raw_weight)
         except (TypeError, ValueError):
-            raise ValueError(f"Item {idx}: 'weight' deve ser um número.")
+            raise ValueError(f"Item {idx}: 'weight' deve ser um numero.")
         if not (0.0 < weight <= _MAX_WEIGHT):
             raise ValueError(
                 f"Item {idx}: 'weight' deve ser > 0 e <= {_MAX_WEIGHT}."
             )
 
         if not perfil_repository.find_tag_by_id(tag_id):
-            raise LookupError(f"Tag com id={tag_id} não encontrada.")
+            raise LookupError(f"Tag com id={tag_id} nao encontrada.")
 
         validated.append({"tag_id": tag_id, "weight": weight})
 

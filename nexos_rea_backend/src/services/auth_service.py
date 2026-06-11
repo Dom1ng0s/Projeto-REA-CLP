@@ -10,13 +10,13 @@ _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 def register(name: str, email: str, password: str) -> dict:
     if not name or not email or not password:
-        raise ValueError("Todos os campos são obrigatórios.")
+        raise ValueError("Todos os campos sao obrigatorios.")
     if not _EMAIL_RE.match(email):
-        raise ValueError("E-mail inválido.")
+        raise ValueError("E-mail invalido.")
     if len(password) < 6:
         raise ValueError("A senha deve ter pelo menos 6 caracteres.")
     if user_repository.find_by_email(email):
-        raise ValueError("E-mail já cadastrado.")
+        raise ValueError("E-mail ja cadastrado.")
 
     password_hash = generate_password_hash(password)
     user = user_repository.create(name=name, email=email, password_hash=password_hash)
@@ -25,11 +25,11 @@ def register(name: str, email: str, password: str) -> dict:
 
 def login(email: str, password: str) -> dict:
     if not email or not password:
-        raise ValueError("E-mail e senha são obrigatórios.")
+        raise ValueError("E-mail e senha sao obrigatorios.")
 
     user = user_repository.find_by_email(email)
     if not user or not check_password_hash(user.password_hash, password):
-        raise ValueError("Credenciais inválidas.")
+        raise ValueError("Credenciais invalidas.")
     if not user.is_active:
         raise ValueError("Conta desativada.")
 
@@ -40,7 +40,7 @@ def login(email: str, password: str) -> dict:
 def get_me(user_id: str) -> dict:
     user = user_repository.find_by_id(user_id)
     if not user:
-        raise ValueError("Usuário não encontrado.")
+        raise ValueError("Usuario nao encontrado.")
     return _serialize(user)
 
 

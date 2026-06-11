@@ -13,7 +13,7 @@ def recomendar():
     try:
         limit = max(1, int(request.args.get("limit", 20)))
     except ValueError:
-        return error("Parâmetro 'limit' inválido.", 400)
+        return error("Parametro 'limit' invalido.", 400)
 
     user_id = get_jwt_identity()
     resultado = recomendacao_service.recomendar(user_id=user_id, limit=limit)

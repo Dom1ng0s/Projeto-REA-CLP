@@ -3,7 +3,9 @@
 # Para rodar: clique em "Send Request" acima de cada bloco
 
 @base = http://localhost:5000
-@token = COLE_SEU_TOKEN_AQUI
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MTE4NDM1MywianRpIjoiZGZkYjIxZWUtZTcyYy00ZDBhLTg4YTUtNDFlYTY5ZjQ3ZTBjIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImNlNWUzYzNjLWJiNzQtNGM0My1iNzBjLTYzY2EzZWNiZjQ5OSIsIm5iZiI6MTc4MTE4NDM1MywiY3NyZiI6ImUxMWFmMTAwLTJjYWMtNDZmZi05NDRhLTg4ZTc5YjJlZjk2ZiIsImV4cCI6MTc4MTE5MTU1M30.1wwOb7Mt39tnwZw-Jz_vlj4iht7qfg9TaWw9oUKaqVI
+@colecao_id = ac102d1e-b76a-4b3e-bbd9-cd83e8e9fdc1
+@rea_id = 4c46c995-8c2a-4970-9565-e2449b81037c
 
 ### ── AUTH ──────────────────────────────────────────────────────────────── ###
 
@@ -46,7 +48,7 @@ GET {{base}}/api/reas/?page=1&per_page=3
 GET {{base}}/api/reas/?q=algebra&page=1&per_page=5
 
 ### Buscar REA por ID (substitua pelo ID real)
-GET {{base}}/api/reas/00000000-0000-0000-0000-000000000000
+GET {{base}}/api/reas/4c46c995-8c2a-4970-9565-e2449b81037c
 
 ### Submeter novo REA (requer token)
 POST {{base}}/api/reas/
@@ -120,3 +122,92 @@ Authorization: Bearer {{token}}
   "license": "CC BY 4.0",
   "resource_type": "tipo_invalido"
 }
+
+
+### ── INTERAÇÕES (Sprint 4) ──────────────────────────────────────────────── ###
+
+### Registrar visualização de um REA (requer token)
+POST {{base}}/api/reas/{{rea_id}}/visualizacao
+Authorization: Bearer {{token}}
+
+### Avaliar um REA (score de 1 a 5, requer token)
+POST {{base}}/api/reas/{{rea_id}}/avaliacoes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "score": 5
+}
+
+### Classificar REA com tags (requer token)
+POST {{base}}/api/reas/{{rea_id}}/tags
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tag_ids": [1, 2]
+}
+
+
+### ── COLEÇÕES (Sprint 3) ─────────────────────────────────────────────────── ###
+
+### Criar coleção (requer token)
+POST {{base}}/api/colecoes/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Minha Coleção de Python"
+}
+
+### Listar minhas coleções (requer token)
+GET {{base}}/api/colecoes/
+Authorization: Bearer {{token}}
+
+### Detalhar coleção por ID (requer token)
+GET {{base}}/api/colecoes/{{colecao_id}}
+Authorization: Bearer {{token}}
+
+### Adicionar REA a uma coleção (requer token)
+POST {{base}}/api/colecoes/{{colecao_id}}/items
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rea_id": "{{rea_id}}"
+}
+
+### Remover REA de uma coleção (requer token)
+DELETE {{base}}/api/colecoes/{{colecao_id}}/items/{{rea_id}}
+Authorization: Bearer {{token}}
+
+### Deletar coleção (requer token)
+DELETE {{base}}/api/colecoes/{{colecao_id}}
+Authorization: Bearer {{token}}
+
+
+### ── PERFIL DE INTERESSES (Sprint 3) ────────────────────────────────────── ###
+
+### Ver interesses do perfil (requer token)
+GET {{base}}/api/perfil/interesses
+Authorization: Bearer {{token}}
+
+### Atualizar interesses do perfil (requer token)
+PUT {{base}}/api/perfil/interesses
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "interesses": [1, 2]
+}
+
+
+### ── RECOMENDAÇÕES (Sprint 4) ───────────────────────────────────────────── ###
+
+### Feed de REAs recomendados (requer token)
+GET {{base}}/api/recomendacoes/
+Authorization: Bearer {{token}}
+
+### Feed com limite customizado
+GET {{base}}/api/recomendacoes/?limit=5
+Authorization: Bearer {{token}}

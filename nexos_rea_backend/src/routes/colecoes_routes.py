@@ -46,7 +46,7 @@ def deletar_colecao(collection_id: str):
     user_id = get_jwt_identity()
     try:
         colecao_service.deletar_colecao(user_id=user_id, collection_id=collection_id)
-        return success(message="Coleção removida com sucesso.")
+        return success(message="Colecao removida com sucesso.")
     except LookupError as e:
         return error(str(e), 404)
     except PermissionError as e:
@@ -84,7 +84,7 @@ def remover_rea(collection_id: str, rea_id: str):
             collection_id=collection_id,
             rea_id=rea_id,
         )
-        return success(message="REA removido da coleção.")
+        return success(message="REA removido da colecao.")
     except LookupError as e:
         return error(str(e), 404)
     except PermissionError as e:

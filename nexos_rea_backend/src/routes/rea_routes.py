@@ -14,7 +14,7 @@ def list_reas():
         page = max(1, int(request.args.get("page", 1)))
         per_page = max(1, int(request.args.get("per_page", 10)))
     except ValueError:
-        return error("Parâmetros de paginação inválidos.", 400)
+        return error("Parametros de paginacao invalidos.", 400)
 
     result = rea_service.list_reas(q=q, page=page, per_page=per_page)
     return success(data=result)
@@ -48,7 +48,7 @@ def registrar_visualizacao(rea_id: str):
     try:
         rea_service.get_rea(rea_id)
         interacao_service.recalcular_pesos(user_id, rea_id, "visualizacao")
-        return success(message="Visualização registrada.")
+        return success(message="Visualizacao registrada.")
     except ValueError as e:
         return error(str(e), 404)
 

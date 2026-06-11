@@ -34,7 +34,7 @@ def submit_rea(data: dict, user_id: str) -> dict:
 
     url = data["url"].strip()
     if rea_repository.find_by_url(url):
-        raise ValueError("Já existe um REA cadastrado com essa URL.")
+        raise ValueError("Ja existe um REA cadastrado com essa URL.")
 
     rea = rea_repository.create({
         "title": data["title"].strip(),
@@ -94,14 +94,14 @@ def classificar_rea(rea_id: str, data: dict, user_id: str) -> dict:
 
     tag_ids = data.get("tag_ids", [])
     if not isinstance(tag_ids, list) or not tag_ids:
-        raise ValueError("O campo 'tag_ids' deve ser uma lista não-vazia de inteiros.")
+        raise ValueError("O campo 'tag_ids' deve ser uma lista nao-vazia de inteiros.")
 
     validated: list[int] = []
     for tid in tag_ids:
         if not isinstance(tid, int) or tid <= 0:
-            raise ValueError(f"tag_id inválido: {tid}.")
+            raise ValueError(f"tag_id invalido: {tid}.")
         if not perfil_repository.find_tag_by_id(tid):
-            raise LookupError(f"Tag com id={tid} não encontrada.")
+            raise LookupError(f"Tag com id={tid} nao encontrada.")
         validated.append(tid)
 
     rea_repository.add_tags(rea.id, validated)
@@ -128,10 +128,10 @@ def _get_visible_or_raise(rea_id: str):
     try:
         rea = rea_repository.find_by_id(uuid.UUID(rea_id))
     except (ValueError, AttributeError):
-        raise ValueError("REA não encontrado.")
+        raise ValueError("REA nao encontrado.")
 
     if not rea or rea.is_blocked or not rea.is_visible:
-        raise ValueError("REA não encontrado.")
+        raise ValueError("REA nao encontrado.")
     return rea
 
 
@@ -139,10 +139,10 @@ def _validate(data: dict) -> None:
     required = ["title", "description", "url", "license", "resource_type"]
     for field in required:
         if not data.get(field, "").strip():
-            raise ValueError(f"O campo '{field}' é obrigatório.")
+            raise ValueError(f"O campo '{field}' e obrigatorio.")
 
     if data["resource_type"].strip().lower() not in _ALLOWED_TYPES:
-        raise ValueError(f"Tipo inválido. Use: {', '.join(sorted(_ALLOWED_TYPES))}.")
+        raise ValueError(f"Tipo invalido. Use: {', '.join(sorted(_ALLOWED_TYPES))}.")
 
 
 def _serialize(rea) -> dict:

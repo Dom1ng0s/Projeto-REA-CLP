@@ -15,7 +15,7 @@ EVENTOS_VALIDOS = set(_DELTAS.keys())
 
 def recalcular_pesos(user_id: str, rea_id: str, evento: str) -> None:
     if evento not in _DELTAS:
-        raise ValueError(f"Evento inválido. Use: {', '.join(sorted(EVENTOS_VALIDOS))}.")
+        raise ValueError(f"Evento invalido. Use: {', '.join(sorted(EVENTOS_VALIDOS))}.")
 
     delta = _DELTAS[evento]
     uid = uuid.UUID(user_id)
