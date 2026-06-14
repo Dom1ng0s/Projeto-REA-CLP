@@ -1,330 +1,289 @@
-# 🚀 Nexos REA - Grupo Epsilon
+# 🎓 Nexos REA — Motor de Recomendação de Recursos Educacionais Abertos
 
-O **Nexos REA** é um Motor de Recomendação de Recursos Educacionais Abertos (REAs) projetado para combater a sobrecarga de informação e otimizar a curadoria de conteúdos educacionais. Através de uma abordagem inteligente, o sistema filtra, avalia e recomenda REAs de forma personalizada para os usuários.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![JWT](https://img.shields.io/badge/JWT-Auth-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-ORM-D71F00?style=for-the-badge)](https://sqlalchemy.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-DB-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow?style=for-the-badge)]()
 
-⚠️ **Status do Projeto:** `Em desenvolvimento` (Sprint 2)
-
----
-
-## 🏗️ Arquitetura e Stack Tecnológica
-
-O ecossistema do back-end foi desenhado seguindo uma **Arquitetura em Camadas (Layered Architecture)**, garantindo a separação clara de responsabilidades, testabilidade e escalabilidade:
-
-* **Apresentação / Rotas:** Responsável por expor os endpoints da API e tratar as requisições HTTP.
-* **Aplicação / Serviços:** Onde reside a lógica de negócio e as regras de orquestração do sistema.
-* **Domínio / Modelos:** Definição das entidades de negócio e mapeamento relacional.
-* **Infraestrutura:** Camada de persistência de dados, configurações de segurança e integrações externas.
-
-### 🛠️ Stacks Utilizadas
-* **Linguagem:** Python 3.10+
-* **Framework Principal:** Flask
-* **ORM (Persistência):** Flask-SQLAlchemy
-* **Autenticação:** Flask-JWT-Extended (Tokens JWT)
-* **Banco de Dados:** PostgreSQL / MySQL (Suporte a ambos via adapters)
-* **Evolução Futura:** O ecossistema está preparado para se integrar a um servidor dedicado de Machine Learning e cálculo preditivo para refinar os scores de recomendação.
+> API REST para curadoria inteligente de REAs: filtra, avalia e recomenda recursos educacionais de forma personalizada com base no perfil e no histórico de interações de cada usuário.
 
 ---
 
-## 📋 Pré-requisitos
+## Índice
 
-Antes de iniciar, certifique-se de ter instalado em sua máquina local:
-* [Python 3.10 ou superior](https://www.python.org/downloads/)
-* [Pip](https://pip.pypa.io/en/stable/installation/) (Gerenciador de pacotes do Python)
-* Instância ativa do Banco de Dados (**PostgreSQL** ou **MySQL**)
+- [Sobre o projeto](#-sobre-o-projeto)
+- [Funcionalidades](#-funcionalidades)
+- [Requisitos](#-requisitos)
+- [Instalação e execução](#-instalação-e-execução)
+- [Como usar — Endpoints](#-como-usar--endpoints)
+- [Arquitetura](#-arquitetura)
+- [Testes](#-testes)
+- [Limitações e status atual](#-limitações-e-status-atual)
+- [Equipe](#-equipe)
+- [Licença](#-licença)
 
 ---
 
-## ⚙️ Configuração do Ambiente (Setup)
+## 📖 Sobre o projeto
 
-Siga os passos abaixo no seu terminal para clonar o repositório e preparar o ambiente de desenvolvimento local.
+Professores e estudantes enfrentam sobrecarga de informação ao buscar materiais educacionais abertos: há muitos REAs disponíveis, mas pouca curadoria. O Nexos REA combate isso com um sistema de recomendação personalizado — quanto mais o usuário interage (visualiza, avalia, classifica), mais precisas ficam as sugestões.
 
-### 1. Clonar o Repositório
+O projeto é o backend de um ecossistema maior desenvolvido pelo **Grupo Epsilon** como parte da disciplina de Ciclo de Vida de Projetos na UFAL.
 
-```
+---
 
-```text
-File generated successfully.
+## ✨ Funcionalidades
+
+- **Cadastro e autenticação** via JWT (tokens de acesso stateless)
+- **Catálogo de REAs** com busca por texto e paginação server-side
+- **Submissão de novos REAs** por usuários autenticados
+- **Registro de interações:** visualização, avaliação com nota e classificação por tags
+- **Coleções pessoais:** criação, listagem, detalhamento, adição e remoção de REAs
+- **Perfil de interesses:** leitura e atualização de preferências temáticas do usuário
+- **Recomendações personalizadas:** endpoint que retorna REAs rankeados com base no perfil e histórico de interações (`recalcular_pesos`)
+
+---
+
+## 📋 Requisitos
+
+- Python 3.10+
+- PostgreSQL (instância local ou na nuvem)
+- pip
+
+---
+
+## ⚙️ Instalação e execução
+
+### 1. Clone o repositório
 
 ```bash
-git clone [https://github.com/grupo-epsilon/nexos-rea-backend.git](https://github.com/grupo-epsilon/nexos-rea-backend.git)
-cd nexos-rea-backend
-
+git clone https://github.com/Dom1ng0s/REA-CLP.git
+cd REA-CLP/nexos_rea_backend
 ```
 
-### 2. Criar e Ativar o Ambiente Virtual (venv)
-
-No Linux/macOS:
+### 2. Crie e ative o ambiente virtual
 
 ```bash
+# Linux / macOS
 python3 -m venv venv
 source venv/bin/activate
 
-```
-
-No Windows (Command Prompt):
-
-```cmd
+# Windows
 python -m venv venv
 venv\Scripts\activate
-
 ```
 
-### 3. Instalar as Dependências
+### 3. Instale as dependências
 
 ```bash
-pip install --upgrade pip
 pip install -r requirements.txt
-
 ```
 
-### 4. Configurar as Variáveis de Ambiente
+### 4. Configure as variáveis de ambiente
 
-Crie um arquivo `.env` na raiz do projeto com base no arquivo de exemplo. Você precisará definir as credenciais do banco de dados local e a chave de criptografia do JWT.
-
-```bash
-cp .env.example .env
-
-```
-
-Exemplo de configuração interna do `.env`:
+Crie um arquivo `.env` na raiz do projeto (`nexos_rea_backend/`):
 
 ```env
-FLASK_APP=src/app.py
-FLASK_ENV=development
 SECRET_KEY=sua_chave_secreta_aqui
 JWT_SECRET_KEY=sua_chave_jwt_secreta_aqui
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/nexos_rea
-# Caso use MySQL: mysql+pymysql://usuario:senha@localhost:3306/nexos_rea
+```
 
+### 5. Inicie o servidor
+
+```bash
+python src/app.py
+```
+
+O servidor estará disponível em `http://localhost:5000`. O SQLAlchemy cria as tabelas automaticamente na primeira execução (`db.create_all()`).
+
+---
+
+## 🔌 Como usar — Endpoints
+
+**URL base:** `http://localhost:5000`
+
+**Autenticação:** endpoints marcados com 🔒 exigem o header:
+```
+Authorization: Bearer <seu_token_jwt>
+```
+O token é obtido via `POST /api/auth/login`.
+
+---
+
+### Autenticação (`/api/auth`)
+
+| Método | Endpoint | Auth | Descrição |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | — | Cadastra novo usuário |
+| `POST` | `/api/auth/login` | — | Autentica e retorna o token JWT |
+| `GET` | `/api/auth/me` | 🔒 | Retorna os dados do usuário autenticado |
+
+**Exemplo — registro:**
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Maria", "email": "maria@email.com", "password": "senha123"}'
+```
+
+**Exemplo — login:**
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "maria@email.com", "password": "senha123"}'
+# Resposta: { "data": { "access_token": "eyJ..." } }
 ```
 
 ---
 
-## 🚀 Execução do Projeto
+### Recursos Educacionais (`/api/reas`)
 
-Com o ambiente devidamente configurado, execute os comandos a seguir para aplicar as migrações do banco de dados e iniciar o servidor Flask localmente.
+| Método | Endpoint | Auth | Descrição |
+|---|---|---|---|
+| `GET` | `/api/reas/` | — | Lista REAs com busca (`?q=`) e paginação (`?page=&per_page=`) |
+| `GET` | `/api/reas/<id>` | — | Detalhes de um REA |
+| `POST` | `/api/reas/` | 🔒 | Submete um novo REA |
+| `POST` | `/api/reas/<id>/visualizacao` | 🔒 | Registra visualização e recalcula pesos de recomendação |
+| `POST` | `/api/reas/<id>/avaliacoes` | 🔒 | Avalia um REA com nota |
+| `POST` | `/api/reas/<id>/tags` | 🔒 | Classifica um REA com tags |
 
-### 1. Rodar as Migrações do Banco de Dados
-
+**Exemplo — busca paginada:**
 ```bash
-flask db upgrade
-
+curl "http://localhost:5000/api/reas/?q=matematica&page=1&per_page=5"
 ```
-
-### 2. Iniciar o Servidor Flask
-
-```bash
-flask run --host=0.0.0.0 --port=5000
-
-```
-
-O servidor estará disponível no endereço local: `http://localhost:5000`
 
 ---
 
-## 📁 Estrutura de Pastas
+### Coleções (`/api/colecoes`)
 
-A estrutura do projeto reflete rigorosamente a separação em camadas adotada pelo time de engenharia:
+| Método | Endpoint | Auth | Descrição |
+|---|---|---|---|
+| `POST` | `/api/colecoes/` | 🔒 | Cria uma nova coleção |
+| `GET` | `/api/colecoes/` | 🔒 | Lista as coleções do usuário |
+| `GET` | `/api/colecoes/<id>` | 🔒 | Detalhes de uma coleção |
+| `DELETE` | `/api/colecoes/<id>` | 🔒 | Remove uma coleção |
+| `POST` | `/api/colecoes/<id>/items` | 🔒 | Adiciona um REA à coleção |
+| `DELETE` | `/api/colecoes/<id>/items/<rea_id>` | 🔒 | Remove um REA da coleção |
 
-```text
-nexos-rea-backend/
+---
+
+### Perfil e Recomendações
+
+| Método | Endpoint | Auth | Descrição |
+|---|---|---|---|
+| `GET` | `/api/perfil/interesses` | 🔒 | Retorna os interesses do usuário |
+| `PUT` | `/api/perfil/interesses` | 🔒 | Atualiza os interesses do usuário |
+| `GET` | `/api/recomendacoes/?limit=20` | 🔒 | Retorna REAs recomendados para o usuário |
+
+---
+
+## 🏗️ Arquitetura
+
+O backend segue uma **Arquitetura em Camadas (Layered Architecture)** com separação clara de responsabilidades:
+
+```
+nexos_rea_backend/
 ├── src/
-│   ├── app.py                  # Ponto de entrada da aplicação (Factory Pattern)
-│   ├── config.py               # Configurações globais de ambiente da aplicação
+│   ├── app.py                    ← Factory da aplicação + registro de blueprints
+│   ├── config.py                 ← Configurações de ambiente
 │   │
-│   ├── presentation/           # Camada de Apresentação
-│   │   └── routes/             # Blueprints do Flask e definições de Endpoints/Rotas
+│   ├── routes/                   ← Camada de Apresentação
+│   │   ├── auth_routes.py        ← /api/auth
+│   │   ├── rea_routes.py         ← /api/reas
+│   │   ├── colecoes_routes.py    ← /api/colecoes
+│   │   ├── perfil_routes.py      ← /api/perfil
+│   │   └── recomendacao_routes.py← /api/recomendacoes
 │   │
-│   ├── application/            # Camada de Aplicação
-│   │   └── services/           # Lógica de negócio pura e regras de uso do sistema
+│   ├── services/                 ← Camada de Aplicação (lógica de negócio)
+│   │   ├── auth_service.py
+│   │   ├── rea_service.py
+│   │   ├── colecao_service.py
+│   │   ├── perfil_service.py
+│   │   ├── recomendacao_service.py
+│   │   └── interacao_service.py  ← recalcula pesos de recomendação
 │   │
-│   ├── domain/                 # Camada de Domínio
-│   │   └── models/             # Entidades de dados mapeadas pelo SQLAlchemy
+│   ├── domain/models/            ← Camada de Domínio (entidades)
+│   │   └── models.py
 │   │
-│   └── infrastructure/         # Camada de Infraestrutura
-│       ├── database.py         # Inicialização do banco de dados e ORM
-│       └── core/
-│           └── auth/           # Configurações e interceptores do JWT-Extended
+│   ├── repositories/             ← Acesso a dados (queries SQLAlchemy)
+│   │   ├── user_repository.py
+│   │   ├── rea_repository.py
+│   │   ├── colecao_repository.py
+│   │   └── perfil_repository.py
+│   │
+│   ├── extensions/
+│   │   └── database.py           ← Inicialização do SQLAlchemy
+│   │
+│   └── utils/
+│       └── responses.py          ← Helpers success() / error() para respostas JSON
 │
-├── migrations/                 # Scripts de migração de banco de dados (Alembic)
-├── .env.example                # Modelo de variáveis de ambiente obrigatórias
-├── README.md                   # Documentação do projeto
-└── requirements.txt            # Manifesto de dependências do Python
-
-```
-
----
-
-## 📑 Diretrizes de Integração (Para o Front-end)
-
-* **URL Base:** Todas as requisições locais devem ser apontadas para `http://localhost:5000/api/v1`.
-* **Autenticação:** Endpoints protegidos exigem o Header `Authorization: Bearer <seu_token_jwt>`. O token é obtido através da rota de login na camada de apresentação.
-* **CORS:** O mecanismo de CORS está habilitado para permitir requisições vindas da origem padrão do React (`http://localhost:3000`).
-"""
-
-with open("README.md", "w", encoding="utf-8") as f:
-f.write(readme_content)
-
-print("File generated successfully.")
-
-```
-Your Markdown file is ready
-[file-tag: code-generated-file-0-1779296593998723772]
-
-```markdown
-# 🚀 Nexos REA - Grupo Epsilon
-
-O **Nexos REA** é um Motor de Recomendação de Recursos Educacionais Abertos (REAs) projetado para combater a sobrecarga de informação e otimizar a curadoria de conteúdos educacionais. Através de uma abordagem inteligente, o sistema filtra, avalia e recomenda REAs de forma personalizada para os usuários.
-
-⚠️ **Status do Projeto:** `Em desenvolvimento` (Sprint 2)
-
----
-
-## 🏗️ Arquitetura e Stack Tecnológica
-
-O ecossistema do back-end foi desenhado seguindo uma **Arquitetura em Camadas (Layered Architecture)**, garantindo a separação clara de responsabilidades, testabilidade e escalabilidade:
-
-* **Apresentação / Rotas:** Responsável por expor os endpoints da API e tratar as requisições HTTP.
-* **Aplicação / Serviços:** Onde reside a lógica de negócio e as regras de orquestração do sistema.
-* **Domínio / Modelos:** Definição das entidades de negócio e mapeamento relacional.
-* **Infraestrutura:** Camada de persistência de dados, configurações de segurança e integrações externas.
-
-### 🛠️ Stacks Utilizadas
-* **Linguagem:** Python 3.10+
-* **Framework Principal:** Flask
-* **ORM (Persistência):** Flask-SQLAlchemy
-* **Autenticação:** Flask-JWT-Extended (Tokens JWT)
-* **Banco de Dados:** PostgreSQL / MySQL (Suporte a ambos via adapters)
-* **Evolução Futura:** O ecossistema está preparado para se integrar a um servidor dedicado de Machine Learning e cálculo preditivo para refinar os scores de recomendação.
-
----
-
-## 📋 Pré-requisitos
-
-Antes de iniciar, certifique-se de ter instalado em sua máquina local:
-* [Python 3.10 ou superior](https://www.python.org/downloads/)
-* [Pip](https://pip.pypa.io/en/stable/installation/) (Gerenciador de pacotes do Python)
-* Instância ativa do Banco de Dados (**PostgreSQL** ou **MySQL**)
-
----
-
-## ⚙️ Configuração do Ambiente (Setup)
-
-Siga os passos abaixo no seu terminal para clonar o repositório e preparar o ambiente de desenvolvimento local.
-
-### 1. Clonar o Repositório
-```bash
-git clone [https://github.com/grupo-epsilon/nexos-rea-backend.git](https://github.com/grupo-epsilon/nexos-rea-backend.git)
-cd nexos-rea-backend
-
-```
-
-### 2. Criar e Ativar o Ambiente Virtual (venv)
-
-No Linux/macOS:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-
-```
-
-No Windows (Command Prompt):
-
-```cmd
-python -m venv venv
-venv\Scripts\activate
-
-```
-
-### 3. Instalar as Dependências
-
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-
-```
-
-### 4. Configurar as Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto com base no arquivo de exemplo. Você precisará definir as credenciais do banco de dados local e a chave de criptografia do JWT.
-
-```bash
-cp .env.example .env
-
-```
-
-Exemplo de configuração interna do `.env`:
-
-```env
-FLASK_APP=src/app.py
-FLASK_ENV=development
-SECRET_KEY=sua_chave_secreta_aqui
-JWT_SECRET_KEY=sua_chave_jwt_secreta_aqui
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/nexos_rea
-# Caso use MySQL: mysql+pymysql://usuario:senha@localhost:3306/nexos_rea
-
-```
-
----
-
-## 🚀 Execução do Projeto
-
-Com o ambiente devidamente configurado, execute os comandos a seguir para aplicar as migrações do banco de dados e iniciar o servidor Flask localmente.
-
-### 1. Rodar as Migrações do Banco de Dados
-
-```bash
-flask db upgrade
-
-```
-
-### 2. Iniciar o Servidor Flask
-
-```bash
-flask run --host=0.0.0.0 --port=5000
-
-```
-
-O servidor estará disponível no endereço local: `http://localhost:5000`
-
----
-
-## 📁 Estrutura de Pastas
-
-A estrutura do projeto reflete rigorosamente a separação em camadas adotada pelo time de engenharia:
-
-```text
-nexos-rea-backend/
-├── src/
-│   ├── app.py                  # Ponto de entrada da aplicação (Factory Pattern)
-│   ├── config.py               # Configurações globais de ambiente da aplicação
-│   │
-│   ├── presentation/           # Camada de Apresentação
-│   │   └── routes/             # Blueprints do Flask e definições de Endpoints/Rotas
-│   │
-│   ├── application/            # Camada de Aplicação
-│   │   └── services/           # Lógica de negócio pura e regras de uso do sistema
-│   │
-│   ├── domain/                 # Camada de Domínio
-│   │   └── models/             # Entidades de dados mapeadas pelo SQLAlchemy
-│   │
-│   └── infrastructure/         # Camada de Infraestrutura
-│       ├── database.py         # Inicialização do banco de dados e ORM
-│       └── core/
-│           └── auth/           # Configurações e interceptores do JWT-Extended
+├── tests/
+│   ├── conftest.py
+│   ├── test_auth.py
+│   ├── test_reas.py
+│   └── test_sprint4.py
 │
-├── migrations/                 # Scripts de migração de banco de dados (Alembic)
-├── .env.example                # Modelo de variáveis de ambiente obrigatórias
-├── README.md                   # Documentação do projeto
-└── requirements.txt            # Manifesto de dependências do Python
-
+├── requirements.txt
+└── .env
 ```
+
+**Stack:**
+
+| Responsabilidade | Tecnologia |
+|---|---|
+| Linguagem | Python 3.10+ |
+| Framework | Flask 3.0 |
+| ORM | Flask-SQLAlchemy 3.1 |
+| Autenticação | Flask-JWT-Extended 4.6 |
+| Banco de dados | PostgreSQL (psycopg3) |
+| Testes | pytest + pytest-flask |
 
 ---
 
-## 📑 Diretrizes de Integração (Para o Front-end)
+## 🧪 Testes
 
-* **URL Base:** Todas as requisições locais devem ser apontadas para `http://localhost:5000/api/v1`.
-* **Autenticação:** Endpoints protegidos exigem o Header `Authorization: Bearer <seu_token_jwt>`. O token é obtido através da rota de login na camada de apresentação.
-* **CORS:** O mecanismo de CORS está habilitado para permitir requisições vindas da origem padrão do React (`http://localhost:3000`).
+```bash
+cd nexos_rea_backend
+pytest tests/
+```
+
+Os testes cobrem:
+- `test_auth.py` — registro, login, token inválido, `GET /me`
+- `test_reas.py` — listagem, busca, submissão, avaliação, tags
+- `test_sprint4.py` — funcionalidades da Sprint 4 (coleções e recomendações)
+
+---
+
+## ⚠️ Limitações e status atual
+
+Este projeto está na **Sprint 2** de desenvolvimento ativo. O que já funciona:
+
+- Autenticação JWT completa
+- CRUD de REAs com paginação e busca
+- Sistema de coleções pessoais
+- Registro de interações (visualização, avaliação, classificação)
+- Perfil de interesses
+- Endpoint de recomendação (implementação inicial do `recalcular_pesos`)
+
+O que ainda não está implementado:
+- Deploy em produção (sem URL pública no momento)
+- Frontend (este repositório é exclusivamente o backend)
+- Algoritmo de recomendação refinado com ML (previsto para sprints futuras)
+
+---
+
+## 👥 Equipe
+
+Projeto desenvolvido pelo **Grupo Epsilon** na disciplina de Ciclo de Vida de Projetos — UFAL.
+
+| Integrante | GitHub |
+|---|---|
+| Davi Domingos de Oliveira | [@Dom1ng0s](https://github.com/Dom1ng0s) |
+
+---
+
+## 📄 Licença
+
+Distribuído sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para detalhes.
