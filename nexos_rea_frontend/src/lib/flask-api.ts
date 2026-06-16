@@ -68,3 +68,31 @@ export async function listReas(
   // Flask retorna os mesmos campos do Supabase (alinhados na Sprint A).
   return { items: data.items as Rea[], total: data.pagination.total };
 }
+
+export interface ReaSubmitPayload {
+  title: string;
+  resource_url: string;
+  format: string;
+  license: string;
+  subject_area: string;
+  education_level: string;
+  description?: string;
+  author?: string;
+  language?: string;
+  thumbnail_url?: string;
+  tags?: string[];
+}
+
+export async function submitRea(payload: ReaSubmitPayload, token: string): Promise<Rea> {
+  const res = await fetch(`${BASE_URL}/api/reas/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message ?? "Erro ao enviar REA.");
+  return json.data as Rea;
+}

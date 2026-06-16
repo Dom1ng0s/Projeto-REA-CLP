@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { BookOpen, FolderOpen, LogOut, Search, ShieldCheck, User as UserIcon } from "lucide-react";
+import { BookOpen, FolderOpen, LogOut, Plus, Search, ShieldCheck, User as UserIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,6 +63,12 @@ export function Header() {
           {user && (
             <>
               <Link
+                to="/enviar"
+                className="px-3 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground data-[status=active]:text-foreground data-[status=active]:font-medium"
+              >
+                Enviar REA
+              </Link>
+              <Link
                 to="/colecoes"
                 className="px-3 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground data-[status=active]:text-foreground data-[status=active]:font-medium"
               >
@@ -104,6 +110,9 @@ export function Header() {
             <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
           ) : user ? (
             <>
+              <Button asChild variant="ghost" size="icon" className="md:hidden" aria-label="Enviar REA">
+                <Link to="/enviar"><Plus className="h-4 w-4" /></Link>
+              </Button>
               <Button asChild variant="ghost" size="icon" className="md:hidden" aria-label="Coleções">
                 <Link to="/colecoes"><FolderOpen className="h-4 w-4" /></Link>
               </Button>
