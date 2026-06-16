@@ -13,11 +13,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "dist/server/server.js",
   "assets": { "directory": "./dist/client" },
+  "workers_dev": true,
   // Variáveis públicas (a publishable key é pública por design).
   // A SUPABASE_SERVICE_ROLE_KEY NÃO vai aqui — é secret via `wrangler secret put`.
   "vars": {
     "SUPABASE_URL": "https://nwpedilylyramuflhmhd.supabase.co",
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_Wip6NKOawjUHCXuxQRMibw_qCWGXLTv",
-    "BACKEND_API_URL": "https://nexos-rea-backend.up.railway.app"
+    "BACKEND_API_URL": "https://projeto-rea-clp-production.up.railway.app"
   }
 }
