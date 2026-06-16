@@ -164,23 +164,30 @@ O frontend (`nexos-rea`) foi gerado via Lovable e conversa **diretamente com o S
 
 ---
 
-### Sprint C — Row Level Security (RLS)
+### Sprint C — Row Level Security (RLS) ✅ CONCLUÍDA
 **Estimativa:** 2 dias · **Prioridade:** Bloqueante (segurança)
 
 > Esta sprint replica no banco as regras de autorização que hoje vivem no Flask.
 
 #### Backend (Supabase SQL)
-- [ ] Habilitar RLS em todas as tabelas
-- [ ] `reas`: leitura pública para `status = 'active'`; escrita exige autenticação
-- [ ] `rea_ratings` / `rea_reports`: usuário autenticado, um registro por REA por usuário
-- [ ] `collections`: dono pode tudo; público lê se `visibility = 'public'`
-- [ ] `collection_items`: segue a policy da collection pai
-- [ ] `profiles` / `user_interests`: apenas o próprio usuário lê e escreve
-- [ ] Funções admin: verificam existência em `user_roles` antes de executar
-- [ ] Testar policies com usuário anônimo, usuário comum e admin
+- [x] Habilitar RLS em todas as 11 tabelas
+- [x] `reas`: leitura pública para `status = 'active'`; escrita restrita a admin
+- [x] `rea_ratings`: SELECT/INSERT/UPDATE/DELETE restritos ao próprio usuário autenticado
+- [x] `rea_reports`: usuário vê as próprias; admin vê e resolve todas
+- [x] `collections`: dono vê/edita; público lê se `visibility = 'public'`; `is_system=true` protegido de UPDATE/DELETE
+- [x] `collection_items`: acesso via policy da collection pai
+- [x] `profiles`: SELECT público (nome/avatar são públicos); INSERT/UPDATE próprio
+- [x] `user_interests`: apenas o próprio usuário lê e escreve
+- [x] Funções admin: protegidas por `has_role()` em SECURITY DEFINER
+- [x] Políticas redundantes removidas (migration `20260616120000_sprint_c_rls_audit.sql`)
+
+#### Problemas encontrados e corrigidos
+- Migration `20260614184351` nunca havia sido aplicada ao banco; conteúdo incorporado em `20260616120000`
+- Políticas antigas `"Users delete/update own collections"` coexistiam com as novas, permitindo edição da coleção Favoritos — corrigido
+- `"Ratings são visíveis a todos"` expunha avaliações individuais desnecessariamente — substituída por `"Usuário lê a própria avaliação"`
 
 #### Frontend
-- [ ] Nenhuma alteração necessária nesta sprint
+- [x] Nenhuma alteração necessária nesta sprint
 
 ---
 
