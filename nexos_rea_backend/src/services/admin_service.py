@@ -2,53 +2,38 @@ from datetime import datetime, timezone
 
 from src.extensions.database import db
 from src.models.models import (
-    REA,
-    Rating,
-    Report,
-    StatusREAEnum,
-    User,
-    UserTagInterest,
+    REA, REARating, REAReport, UserInterest,
+    REA_STATUS_ACTIVE, REA_STATUS_HIDDEN, REA_STATUS_REVIEW, REA_STATUS_REMOVED,
 )
 
-
-# ── Fila de moderação ──────────────────────────────────────────────────────────
 
 def listar_sob_revisao() -> list[dict]:
     reas = db.session.execute(
         db.select(REA)
-        .where(REA.status == StatusREAEnum.sob_revisao)
+        .where(REA.status.in_([REA_STATUS_REVIEW, REA_STATUS_HIDDEN]))
         .order_by(REA.report_count.desc(), REA.created_at.asc())
     ).scalars().all()
     return [_serialize_rea_admin(r) for r in reas]
 
 
 def aprovar_rea(rea_id: str) -> dict:
-    """
-    Admin julga o conteúdo como adequado:
-    - Restaura status para ATIVO.
-    - Marca todas as denúncias pendentes como revisadas.
-    """
     rea = _get_or_raise(rea_id)
-    if rea.status != StatusREAEnum.sob_revisao:
+    if rea.status not in (REA_STATUS_REVIEW, REA_STATUS_HIDDEN):
         raise ValueError("REA nao esta sob revisao.")
 
-    rea.status = StatusREAEnum.ativo
+    rea.status = REA_STATUS_ACTIVE
     now = datetime.now(timezone.utc)
 
     db.session.execute(
-        db.update(Report)
-        .where(Report.rea_id == rea.id, Report.reviewed == False)  # noqa: E712
-        .values(reviewed=True, reviewed_at=now)
+        db.update(REAReport)
+        .where(REAReport.rea_id == rea.id, REAReport.state == "pending")
+        .values(state="dismissed", resolved_at=now)
     )
     db.session.commit()
     return _serialize_rea_admin(rea)
 
 
 def remover_rea(rea_id: str) -> dict:
-    """
-    Admin julga o conteúdo como inadequado e o remove definitivamente.
-    O CASCADE no banco cuida de ratings, reports e collection_items.
-    """
     rea = _get_or_raise(rea_id)
     payload = {"id": rea_id, "title": rea.title, "removido": True}
     db.session.delete(rea)
@@ -56,49 +41,37 @@ def remover_rea(rea_id: str) -> dict:
     return payload
 
 
-# ── Dashboard de estatísticas ──────────────────────────────────────────────────
-
 def obter_estatisticas() -> dict:
-    total_usuarios = db.session.execute(db.select(db.func.count(User.id))).scalar_one()
-    total_ativos = _contar_reas(StatusREAEnum.ativo)
-    total_ocultos = _contar_reas(StatusREAEnum.oculto)
-    total_sob_revisao = _contar_reas(StatusREAEnum.sob_revisao)
-    total_reas = total_ativos + total_ocultos + total_sob_revisao
+    total_ativos      = _contar_reas(REA_STATUS_ACTIVE)
+    total_ocultos     = _contar_reas(REA_STATUS_HIDDEN)
+    total_sob_revisao = _contar_reas(REA_STATUS_REVIEW)
+    total_removidos   = _contar_reas(REA_STATUS_REMOVED)
+    total_reas        = total_ativos + total_ocultos + total_sob_revisao + total_removidos
 
-    total_avaliacoes = db.session.execute(db.select(db.func.count(Rating.id))).scalar_one()
-    total_denuncias = db.session.execute(db.select(db.func.count(Report.id))).scalar_one()
+    total_avaliacoes = db.session.execute(db.select(db.func.count(REARating.id))).scalar_one()
+    total_denuncias  = db.session.execute(db.select(db.func.count(REAReport.id))).scalar_one()
 
-    # Taxa de Engajamento: % de usuários que interagiram com ao menos 1 REA.
-    # Proxy derivado do perfil de interesses gerado pelo motor de recomendação.
-    usuarios_com_interacao = db.session.execute(
-        db.select(db.func.count(db.func.distinct(UserTagInterest.user_id)))
+    total_usuarios = db.session.execute(
+        db.select(db.func.count(db.func.distinct(UserInterest.user_id)))
     ).scalar_one()
 
-    taxa_engajamento = (
-        round(usuarios_com_interacao / total_usuarios * 100, 1)
-        if total_usuarios > 0 else 0.0
-    )
-
     return {
-        "usuarios": {
-            "total": total_usuarios,
-            "com_interacao": usuarios_com_interacao,
-            "taxa_engajamento_pct": taxa_engajamento,
-        },
         "reas": {
-            "total": total_reas,
-            "ativos": total_ativos,
+            "total":                  total_reas,
+            "ativos":                 total_ativos,
             "ocultos_automaticamente": total_ocultos,
-            "sob_revisao": total_sob_revisao,
+            "sob_revisao":            total_sob_revisao,
+            "removidos":              total_removidos,
         },
         "moderacao": {
             "total_avaliacoes": total_avaliacoes,
-            "total_denuncias": total_denuncias,
+            "total_denuncias":  total_denuncias,
+        },
+        "usuarios": {
+            "com_interacao": total_usuarios,
         },
     }
 
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _get_or_raise(rea_id: str) -> REA:
     import uuid
@@ -112,7 +85,7 @@ def _get_or_raise(rea_id: str) -> REA:
     return rea
 
 
-def _contar_reas(status: StatusREAEnum) -> int:
+def _contar_reas(status: str) -> int:
     return db.session.execute(
         db.select(db.func.count(REA.id)).where(REA.status == status)
     ).scalar_one()
@@ -121,24 +94,24 @@ def _contar_reas(status: StatusREAEnum) -> int:
 def _serialize_rea_admin(rea: REA) -> dict:
     denuncias = [
         {
-            "id": r.id,
-            "user_id": str(r.user_id),
-            "reason": r.reason,
-            "detail": r.detail,
+            "id":         str(r.id),
+            "user_id":    str(r.user_id),
+            "reason":     r.reason,
+            "details":    r.details,
             "created_at": r.created_at.isoformat(),
-            "reviewed": r.reviewed,
+            "state":      r.state,
         }
         for r in rea.reports
     ]
     return {
-        "id": str(rea.id),
-        "title": rea.title,
-        "url": rea.url,
-        "avg_rating": rea.avg_rating,
+        "id":           str(rea.id),
+        "title":        rea.title,
+        "resource_url": rea.resource_url,
+        "rating_avg":   float(rea.rating_avg),
         "rating_count": rea.rating_count,
         "report_count": rea.report_count,
-        "status": rea.status.value,
+        "status":       rea.status,
         "submitted_by": str(rea.submitted_by) if rea.submitted_by else None,
-        "created_at": rea.created_at.isoformat(),
-        "denuncias": denuncias,
+        "created_at":   rea.created_at.isoformat(),
+        "denuncias":    denuncias,
     }

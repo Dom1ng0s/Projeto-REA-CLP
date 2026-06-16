@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime, timezone
-from enum import Enum as PyEnum
 
-from sqlalchemy import CheckConstraint, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 
 from src.extensions.database import db
 
@@ -12,160 +10,177 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-class RoleEnum(PyEnum):
-    usuario = "usuario"
-    admin = "admin"
+# ── Status constants (mirrors public.rea_status enum in Supabase) ──────────────
+REA_STATUS_ACTIVE  = "active"
+REA_STATUS_HIDDEN  = "hidden_low_rating"
+REA_STATUS_REVIEW  = "blocked_review"
+REA_STATUS_REMOVED = "removed"
 
 
-class StatusREAEnum(PyEnum):
-    ativo = "ativo"
-    oculto = "oculto"           # gatilho: avg_rating < 2.0
-    sob_revisao = "sob_revisao" # gatilho: report_count >= 3 (requer julgamento admin)
+# ── Profile (mirrors public.profiles — linked to auth.users) ──────────────────
+class Profile(db.Model):
+    __tablename__ = "profiles"
+
+    id              = db.Column(UUID(as_uuid=True), primary_key=True)
+    display_name    = db.Column(db.Text)
+    bio             = db.Column(db.Text)
+    avatar_url      = db.Column(db.Text)
+    skip_external_warning = db.Column(db.Boolean, nullable=False, default=False)
+    created_at      = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    updated_at      = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
 
-class User(db.Model):
-    __tablename__ = "users"
+# ── UserRole (mirrors public.user_roles) ──────────────────────────────────────
+class UserRole(db.Model):
+    __tablename__ = "user_roles"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = db.Column(db.String(150), nullable=False)
-    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum(RoleEnum), nullable=False, default=RoleEnum.usuario)
-    is_active = db.Column(db.Boolean, nullable=False, default=True)
-    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
-
-    interests = db.relationship("UserTagInterest", back_populates="user", cascade="all, delete-orphan")
-    ratings = db.relationship("Rating", back_populates="user", cascade="all, delete-orphan")
-    reports = db.relationship("Report", back_populates="user", cascade="all, delete-orphan")
-    collections = db.relationship("Collection", back_populates="user", cascade="all, delete-orphan")
-    submitted_reas = db.relationship("REA", back_populates="submitter")
+    id         = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = db.Column(UUID(as_uuid=True), nullable=False, index=True)
+    role       = db.Column(db.String(20), nullable=False)   # 'admin' | 'user'
+    granted_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
 
-class Tag(db.Model):
-    __tablename__ = "tags"
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    slug = db.Column(db.String(100), unique=True, nullable=False, index=True)
-
-    rea_associations = db.relationship("REATag", back_populates="tag", cascade="all, delete-orphan")
-    user_interests = db.relationship("UserTagInterest", back_populates="tag", cascade="all, delete-orphan")
-
-
-class UserTagInterest(db.Model):
-    __tablename__ = "user_tag_interests"
-
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    tag_id = db.Column(db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
-    weight = db.Column(db.Float, nullable=False, default=1.0)
-    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now, onupdate=_now)
-
-    user = db.relationship("User", back_populates="interests")
-    tag = db.relationship("Tag", back_populates="user_interests")
-
-
+# ── REA (mirrors public.reas) ──────────────────────────────────────────────────
 class REA(db.Model):
     __tablename__ = "reas"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    title = db.Column(db.String(300), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    url = db.Column(db.String(500), nullable=False, unique=True)
-    author = db.Column(db.String(200))
-    license = db.Column(db.String(100), nullable=False)
-    resource_type = db.Column(db.String(50), nullable=False)
-    language = db.Column(db.String(10), nullable=False, default="pt-BR")
-    thumbnail_url = db.Column(db.String(500))
-    avg_rating = db.Column(db.Float, nullable=False, default=0.0)
-    rating_count = db.Column(db.Integer, nullable=False, default=0)
-    report_count = db.Column(db.Integer, nullable=False, default=0)
-    status = db.Column(
-        db.Enum(StatusREAEnum),
-        nullable=False,
-        default=StatusREAEnum.ativo,
-        index=True,
-    )
-    # Mantidos para compatibilidade com registros legados; novos fluxos usam `status`.
-    is_visible = db.Column(db.Boolean, nullable=False, default=True)
-    is_blocked = db.Column(db.Boolean, nullable=False, default=False)
-    submitted_by = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    id            = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title         = db.Column(db.Text, nullable=False)
+    description   = db.Column(db.Text)
+    resource_url  = db.Column(db.Text, nullable=False)
+    thumbnail_url = db.Column(db.Text)
+    source_url    = db.Column(db.Text)
+    author        = db.Column(db.Text)
+    format        = db.Column(db.String(20), nullable=False)        # rea_format enum
+    license       = db.Column(db.String(30), nullable=False)        # rea_license enum
+    language      = db.Column(db.String(10), nullable=False, default="pt_br")
+    subject_area  = db.Column(db.Text, nullable=False)
+    education_level = db.Column(db.String(20), nullable=False)      # education_level enum
+    tags          = db.Column(ARRAY(db.Text), nullable=False, default=list)
+    status        = db.Column(db.String(25), nullable=False, default=REA_STATUS_ACTIVE, index=True)
+    rating_avg    = db.Column(db.Numeric(3, 2), nullable=False, default=0)
+    rating_count  = db.Column(db.Integer, nullable=False, default=0)
+    report_count  = db.Column(db.Integer, nullable=False, default=0)
+    submitted_by  = db.Column(UUID(as_uuid=True), nullable=True)
+    created_at    = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    updated_at    = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
-    submitter = db.relationship("User", back_populates="submitted_reas")
-    tags = db.relationship("REATag", back_populates="rea", cascade="all, delete-orphan")
-    ratings = db.relationship("Rating", back_populates="rea", cascade="all, delete-orphan")
-    reports = db.relationship("Report", back_populates="rea", cascade="all, delete-orphan")
+    ratings  = db.relationship("REARating",  back_populates="rea", cascade="all, delete-orphan")
+    reports  = db.relationship("REAReport",  back_populates="rea", cascade="all, delete-orphan")
     collection_items = db.relationship("CollectionItem", back_populates="rea", cascade="all, delete-orphan")
+    interactions = db.relationship("REAInteraction", back_populates="rea", cascade="all, delete-orphan")
 
 
-class REATag(db.Model):
-    __tablename__ = "rea_tags"
+# ── Tag (mirrors public.tags) ──────────────────────────────────────────────────
+class Tag(db.Model):
+    __tablename__ = "tags"
 
-    rea_id = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), primary_key=True)
-    tag_id = db.Column(db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
-
-    rea = db.relationship("REA", back_populates="tags")
-    tag = db.relationship("Tag", back_populates="rea_associations")
-
-
-class Rating(db.Model):
-    __tablename__ = "ratings"
-    __table_args__ = (
-        UniqueConstraint("user_id", "rea_id", name="uq_rating_user_rea"),
-        CheckConstraint("score >= 1 AND score <= 5", name="ck_rating_score_range"),
-    )
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    rea_id = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), nullable=False)
-    score = db.Column(db.SmallInteger, nullable=False)
-    comment = db.Column(db.Text)
+    id         = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug       = db.Column(db.Text, unique=True, nullable=False, index=True)
+    label      = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
-    user = db.relationship("User", back_populates="ratings")
+    user_interests = db.relationship("UserInterest", back_populates="tag", cascade="all, delete-orphan")
+
+
+# ── UserInterest (mirrors public.user_interests) ───────────────────────────────
+class UserInterest(db.Model):
+    __tablename__ = "user_interests"
+
+    user_id    = db.Column(UUID(as_uuid=True), primary_key=True)
+    tag_id     = db.Column(UUID(as_uuid=True), db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True)
+    weight     = db.Column(db.Numeric(5, 3), nullable=False, default=1.0)
+    source     = db.Column(db.String(10), nullable=False, default="manual")  # 'manual' | 'inferred'
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+
+    tag = db.relationship("Tag", back_populates="user_interests")
+
+
+# ── SubjectArea (mirrors public.subject_areas) ────────────────────────────────
+class SubjectArea(db.Model):
+    __tablename__ = "subject_areas"
+
+    id         = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug       = db.Column(db.Text, unique=True, nullable=False)
+    label      = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+
+
+# ── REAInteraction (mirrors public.rea_interactions) ──────────────────────────
+class REAInteraction(db.Model):
+    __tablename__ = "rea_interactions"
+
+    id         = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = db.Column(UUID(as_uuid=True), nullable=False)
+    rea_id     = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), nullable=False)
+    event_type = db.Column(db.String(30), nullable=False)
+    value      = db.Column(db.Numeric(6, 3), nullable=False, default=0)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+
+    rea = db.relationship("REA", back_populates="interactions")
+
+
+# ── REARating (mirrors public.rea_ratings) ────────────────────────────────────
+class REARating(db.Model):
+    __tablename__ = "rea_ratings"
+    __table_args__ = (db.UniqueConstraint("rea_id", "user_id", name="uq_rea_rating_user"),)
+
+    id         = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rea_id     = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), nullable=False)
+    user_id    = db.Column(UUID(as_uuid=True), nullable=False)
+    rating     = db.Column(db.SmallInteger, nullable=False)
+    comment    = db.Column(db.Text)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    updated_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+
     rea = db.relationship("REA", back_populates="ratings")
 
 
-class Report(db.Model):
-    """Denúncia de um usuário contra um REA. Um usuário só pode denunciar cada REA uma vez."""
-    __tablename__ = "reports"
-    __table_args__ = (
-        UniqueConstraint("user_id", "rea_id", name="uq_report_user_rea"),
-    )
+# ── REAReport (mirrors public.rea_reports) ────────────────────────────────────
+class REAReport(db.Model):
+    __tablename__ = "rea_reports"
+    __table_args__ = (db.UniqueConstraint("rea_id", "user_id", name="uq_rea_report_user"),)
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    rea_id = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), nullable=False)
-    reason = db.Column(db.String(100), nullable=False)
-    detail = db.Column(db.Text)
-    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
-    # Campos de resolução — preenchidos pelo Admin ao julgar
-    reviewed = db.Column(db.Boolean, nullable=False, default=False)
-    reviewed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    id          = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rea_id      = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), nullable=False)
+    user_id     = db.Column(UUID(as_uuid=True), nullable=False)
+    reason      = db.Column(db.String(20), nullable=False)   # report_reason enum
+    details     = db.Column(db.Text)
+    state       = db.Column(db.String(10), nullable=False, default="pending")  # report_state enum
+    resolved_by = db.Column(UUID(as_uuid=True), nullable=True)
+    resolved_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at  = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
-    user = db.relationship("User", back_populates="reports")
     rea = db.relationship("REA", back_populates="reports")
 
 
+# ── Collection (mirrors public.collections) ───────────────────────────────────
 class Collection(db.Model):
     __tablename__ = "collections"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    is_public = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    id          = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = db.Column(UUID(as_uuid=True), nullable=False)
+    title       = db.Column(db.Text, nullable=False)
+    description = db.Column(db.Text)
+    visibility  = db.Column(db.String(10), nullable=False, default="private")  # 'private' | 'public'
+    cover_url   = db.Column(db.Text)
+    is_system   = db.Column(db.Boolean, nullable=False, default=False)
+    created_at  = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    updated_at  = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
-    user = db.relationship("User", back_populates="collections")
     items = db.relationship("CollectionItem", back_populates="collection", cascade="all, delete-orphan")
 
 
+# ── CollectionItem (mirrors public.collection_items) ──────────────────────────
 class CollectionItem(db.Model):
     __tablename__ = "collection_items"
 
     collection_id = db.Column(UUID(as_uuid=True), db.ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True)
-    rea_id = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), primary_key=True)
-    added_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    rea_id        = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), primary_key=True)
+    position      = db.Column(db.Integer, nullable=False, default=0)
+    note          = db.Column(db.Text)
+    added_at      = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
 
     collection = db.relationship("Collection", back_populates="items")
-    rea = db.relationship("REA", back_populates="collection_items")
+    rea        = db.relationship("REA", back_populates="collection_items")

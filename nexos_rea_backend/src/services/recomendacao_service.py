@@ -22,16 +22,16 @@ def recomendar(user_id: str, limit: int = _DEFAULT_LIMIT) -> list[dict]:
 
 def _serialize(rea, relevance_score: float) -> dict:
     return {
-        "id": str(rea.id),
-        "title": rea.title,
-        "description": rea.description,
-        "url": rea.url,
-        "author": rea.author,
-        "license": rea.license,
-        "resource_type": rea.resource_type,
-        "language": rea.language,
-        "thumbnail_url": rea.thumbnail_url,
-        "avg_rating": rea.avg_rating,
-        "rating_count": rea.rating_count,
+        "id":              str(rea.id),
+        "title":           rea.title,
+        "description":     rea.description,
+        "resource_url":    rea.resource_url,
+        "author":          rea.author,
+        "license":         rea.license,
+        "format":          rea.format,
+        "language":        rea.language,
+        "thumbnail_url":   rea.thumbnail_url,
+        "rating_avg":      float(rea.rating_avg),
+        "rating_count":    rea.rating_count,
         "relevance_score": round(relevance_score, 2),
     }

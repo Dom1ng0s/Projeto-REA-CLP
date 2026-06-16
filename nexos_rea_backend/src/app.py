@@ -1,11 +1,10 @@
 from flask import Flask
-from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 from src.config import Config
 from src.extensions.database import db
-from src.models import models  # noqa: F401 — importado para registrar os modelos no SQLAlchemy
+from src.models import models  # noqa: F401 — registra os modelos no SQLAlchemy
 from src.routes.admin_routes import admin_bp
-from src.routes.auth_routes import auth_bp
 from src.routes.colecoes_routes import colecoes_bp
 from src.routes.denuncia_routes import denuncia_bp
 from src.routes.perfil_routes import perfil_bp
@@ -17,19 +16,15 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    CORS(app, origins=app.config["CORS_ORIGINS"])
     db.init_app(app)
-    JWTManager(app)
 
-    with app.app_context():
-        db.create_all()
-
-    app.register_blueprint(auth_bp, url_prefix="/api/auth")
-    app.register_blueprint(rea_bp, url_prefix="/api/reas")
-    app.register_blueprint(colecoes_bp, url_prefix="/api/colecoes")
-    app.register_blueprint(perfil_bp, url_prefix="/api/perfil")
+    app.register_blueprint(rea_bp,          url_prefix="/api/reas")
+    app.register_blueprint(colecoes_bp,     url_prefix="/api/colecoes")
+    app.register_blueprint(perfil_bp,       url_prefix="/api/perfil")
     app.register_blueprint(recomendacao_bp, url_prefix="/api/recomendacoes")
-    app.register_blueprint(denuncia_bp, url_prefix="/api/denuncias")
-    app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(denuncia_bp,     url_prefix="/api/denuncias")
+    app.register_blueprint(admin_bp,        url_prefix="/api/admin")
 
     return app
 
