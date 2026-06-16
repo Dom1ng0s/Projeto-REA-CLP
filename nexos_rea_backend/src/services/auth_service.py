@@ -39,7 +39,7 @@ def login(email: str, password: str) -> dict:
 
 def get_me(user_id: str) -> dict:
     user = user_repository.find_by_id(user_id)
-    if not user:
+    if not user or not user.is_active:
         raise ValueError("Usuario nao encontrado.")
     return _serialize(user)
 

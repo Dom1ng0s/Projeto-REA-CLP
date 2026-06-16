@@ -34,7 +34,7 @@ def test_register_duplicate_email(client):
     _register(client)
     r = _register(client)
     assert r.status_code == 400
-    assert "já cadastrado" in r.get_json()["message"]
+    assert "ja cadastrado" in r.get_json()["message"]
 
 
 def test_register_missing_name(client):
@@ -45,7 +45,7 @@ def test_register_missing_name(client):
 def test_register_invalid_email(client):
     r = _register(client, {"name": "X", "email": "nao-e-email", "password": "123456"})
     assert r.status_code == 400
-    assert "inválido" in r.get_json()["message"]
+    assert "invalido" in r.get_json()["message"]
 
 
 def test_register_short_password(client):
@@ -69,7 +69,7 @@ def test_login_wrong_password(client):
     _register(client)
     r = _login(client, password="senha_errada")
     assert r.status_code == 401
-    assert "inválidas" in r.get_json()["message"]
+    assert "invalidas" in r.get_json()["message"]
 
 
 def test_login_unknown_email(client):

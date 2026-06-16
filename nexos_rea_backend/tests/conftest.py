@@ -22,6 +22,7 @@ class TestConfig(Config):
 def app():
     application = create_app(TestConfig)
     with application.app_context():
+        _db.drop_all()   # garante schema limpo mesmo se sessão anterior abortou
         _db.create_all()
         yield application
         _db.drop_all()

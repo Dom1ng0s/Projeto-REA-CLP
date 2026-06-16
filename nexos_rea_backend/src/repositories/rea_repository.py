@@ -3,11 +3,11 @@ import uuid
 from sqlalchemy import func
 
 from src.extensions.database import db
-from src.models.models import REA, REATag, UserTagInterest
+from src.models.models import REA, REATag, StatusREAEnum, UserTagInterest
 
 
 def list_visible(q: str | None, page: int, per_page: int):
-    query = db.select(REA).where(REA.is_visible == True, REA.is_blocked == False)
+    query = db.select(REA).where(REA.status == StatusREAEnum.ativo)
 
     if q:
         term = f"%{q}%"
@@ -36,7 +36,7 @@ def list_recommended(user_id: uuid.UUID, limit: int) -> list[tuple]:
     query = (
         db.select(REA, func.coalesce(score_subq.c.score, 0.0).label("relevance_score"))
         .outerjoin(score_subq, score_subq.c.rea_id == REA.id)
-        .where(REA.is_visible == True, REA.is_blocked == False)
+        .where(REA.status == StatusREAEnum.ativo)
         .order_by(
             func.coalesce(score_subq.c.score, 0.0).desc(),
             REA.avg_rating.desc(),
