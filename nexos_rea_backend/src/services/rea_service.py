@@ -18,12 +18,14 @@ def list_reas(
     subject_area: str | None = None,
     language: str | None = None,
     min_rating: float | None = None,
+    unrated_only: bool = False,
 ) -> dict:
     per_page = min(per_page, _MAX_PER_PAGE)
     pagination = rea_repository.list_visible(
         q=q, page=page, per_page=per_page,
         format=format, education_level=education_level,
-        subject_area=subject_area, language=language, min_rating=min_rating,
+        subject_area=subject_area, language=language,
+        min_rating=min_rating, unrated_only=unrated_only,
     )
     return {
         "items": [_serialize(r) for r in pagination.items],
@@ -151,6 +153,7 @@ def _serialize(rea) -> dict:
         "title":           rea.title,
         "description":     rea.description,
         "resource_url":    rea.resource_url,
+        "source_url":      rea.source_url,
         "author":          rea.author,
         "license":         rea.license,
         "format":          rea.format,
@@ -161,6 +164,7 @@ def _serialize(rea) -> dict:
         "thumbnail_url":   rea.thumbnail_url,
         "rating_avg":      float(rea.rating_avg),
         "rating_count":    rea.rating_count,
+        "report_count":    rea.report_count,
         "status":          rea.status,
         "submitted_by":    str(rea.submitted_by) if rea.submitted_by else None,
         "created_at":      rea.created_at.isoformat(),

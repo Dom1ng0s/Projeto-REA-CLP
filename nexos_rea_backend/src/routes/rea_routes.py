@@ -15,6 +15,8 @@ def list_reas():
     subject_area    = request.args.get("subject_area", "").strip() or None
     language        = request.args.get("language", "").strip() or None
 
+    unrated_only = request.args.get("unrated_only", "").lower() in ("1", "true")
+
     try:
         page      = max(1, int(request.args.get("page", 1)))
         per_page  = max(1, int(request.args.get("per_page", 10)))
@@ -26,7 +28,8 @@ def list_reas():
     result = rea_service.list_reas(
         q=q, page=page, per_page=per_page,
         format=fmt, education_level=education_level,
-        subject_area=subject_area, language=language, min_rating=min_rating,
+        subject_area=subject_area, language=language,
+        min_rating=min_rating, unrated_only=unrated_only,
     )
     return success(data=result)
 

@@ -15,6 +15,7 @@ def list_visible(
     subject_area: str | None = None,
     language: str | None = None,
     min_rating: float | None = None,
+    unrated_only: bool = False,
 ):
     query = db.select(REA).where(REA.status == REA_STATUS_ACTIVE)
 
@@ -26,10 +27,12 @@ def list_visible(
     if education_level:
         query = query.where(REA.education_level == education_level)
     if subject_area:
-        query = query.where(REA.subject_area == subject_area)
+        query = query.where(REA.subject_area.ilike(subject_area))
     if language:
         query = query.where(REA.language == language)
-    if min_rating is not None:
+    if unrated_only:
+        query = query.where(REA.rating_count == 0)
+    elif min_rating is not None:
         query = query.where(REA.rating_avg >= min_rating)
 
     query = query.order_by(REA.created_at.desc())
