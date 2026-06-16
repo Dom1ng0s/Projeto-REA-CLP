@@ -9,9 +9,22 @@ _ALLOWED_FORMATS = {"video", "audio", "text", "image", "interactive", "slides", 
 _MAX_PER_PAGE = 50
 
 
-def list_reas(q: str | None, page: int, per_page: int) -> dict:
+def list_reas(
+    q: str | None,
+    page: int,
+    per_page: int,
+    format: str | None = None,
+    education_level: str | None = None,
+    subject_area: str | None = None,
+    language: str | None = None,
+    min_rating: float | None = None,
+) -> dict:
     per_page = min(per_page, _MAX_PER_PAGE)
-    pagination = rea_repository.list_visible(q=q, page=page, per_page=per_page)
+    pagination = rea_repository.list_visible(
+        q=q, page=page, per_page=per_page,
+        format=format, education_level=education_level,
+        subject_area=subject_area, language=language, min_rating=min_rating,
+    )
     return {
         "items": [_serialize(r) for r in pagination.items],
         "pagination": {

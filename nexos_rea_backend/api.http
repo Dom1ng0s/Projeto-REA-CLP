@@ -1,174 +1,133 @@
 # Nexos REA Backend — Testes de API
-# Extensão necessária: REST Client (humao.rest-client) no VS Code
-# Para rodar: clique em "Send Request" acima de cada bloco
+# Extensão: REST Client (humao.rest-client) no VS Code
+#
+# Auth: obtenha um token Supabase via frontend e cole em @token abaixo.
+# O backend valida o JWT do Supabase — não há endpoints de register/login.
 
-@base = http://localhost:5000
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MTE4NDM1MywianRpIjoiZGZkYjIxZWUtZTcyYy00ZDBhLTg4YTUtNDFlYTY5ZjQ3ZTBjIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImNlNWUzYzNjLWJiNzQtNGM0My1iNzBjLTYzY2EzZWNiZjQ5OSIsIm5iZiI6MTc4MTE4NDM1MywiY3NyZiI6ImUxMWFmMTAwLTJjYWMtNDZmZi05NDRhLTg4ZTc5YjJlZjk2ZiIsImV4cCI6MTc4MTE5MTU1M30.1wwOb7Mt39tnwZw-Jz_vlj4iht7qfg9TaWw9oUKaqVI
-@colecao_id = ac102d1e-b76a-4b3e-bbd9-cd83e8e9fdc1
-@rea_id = 4c46c995-8c2a-4970-9565-e2449b81037c
-
-### ── AUTH ──────────────────────────────────────────────────────────────── ###
-
-### Registrar usuário
-POST {{base}}/api/auth/register
-Content-Type: application/json
-
-{
-  "name": "Ana Souza",
-  "email": "ana@exemplo.com",
-  "password": "senha123"
-}
-
-### Login (copie o access_token e cole em @token acima)
-POST {{base}}/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "ana@exemplo.com",
-  "password": "senha123"
-}
-
-### Meu perfil (requer token)
-GET {{base}}/api/auth/me
-Authorization: Bearer {{token}}
+@base        = http://localhost:5000
+@token       = COLE_AQUI_O_TOKEN_SUPABASE
+@colecao_id  = 00000000-0000-0000-0000-000000000001
+@rea_id      = 00000000-0000-0000-0000-000000000002
 
 
-### ── REAs ───────────────────────────────────────────────────────────────── ###
+### ── REAs — Catálogo ───────────────────────────────────────────────────────── ###
 
-### Listar todos os REAs
+### Listar todos os REAs (sem auth)
 GET {{base}}/api/reas/
 
-### Buscar por título
+### Buscar por título ou descrição
 GET {{base}}/api/reas/?q=python
 
-### Paginação (página 1, 3 por página)
-GET {{base}}/api/reas/?page=1&per_page=3
+### Paginação
+GET {{base}}/api/reas/?page=1&per_page=5
 
-### Busca + paginação
-GET {{base}}/api/reas/?q=algebra&page=1&per_page=5
+### Filtrar por formato
+GET {{base}}/api/reas/?format=video
 
-### Buscar REA por ID (substitua pelo ID real)
-GET {{base}}/api/reas/4c46c995-8c2a-4970-9565-e2449b81037c
+### Filtrar por nível de ensino
+GET {{base}}/api/reas/?education_level=ensino_medio
 
-### Submeter novo REA (requer token)
+### Filtrar por área de conhecimento
+GET {{base}}/api/reas/?subject_area=Matematica
+
+### Filtrar por idioma
+GET {{base}}/api/reas/?language=pt_br
+
+### Filtrar por nota mínima (ex.: 3.5 ou acima)
+GET {{base}}/api/reas/?min_rating=3.5
+
+### Combinar filtros (busca + formato + paginação)
+GET {{base}}/api/reas/?q=algebra&format=text&education_level=superior&page=1&per_page=10
+
+### Buscar REA por ID
+GET {{base}}/api/reas/{{rea_id}}
+
+
+### ── REAs — Submissão (requer token) ────────────────────────────────────────── ###
+
+### Submeter novo REA — campos obrigatórios
 POST {{base}}/api/reas/
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "title": "Cálculo Diferencial e Integral",
-  "description": "Curso completo com videoaulas e exercícios resolvidos.",
-  "url": "https://exemplo.com/calculo",
+  "title": "Calculo Diferencial e Integral",
+  "resource_url": "https://exemplo.com/calculo",
   "license": "CC BY 4.0",
-  "resource_type": "course"
+  "format": "video",
+  "subject_area": "Matematica",
+  "education_level": "superior"
 }
 
-### Submeter REA com todos os campos opcionais
+### Submeter REA com todos os campos
 POST {{base}}/api/reas/
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
   "title": "Algoritmos e Estruturas de Dados",
-  "description": "Material para graduação com implementações em Python.",
-  "url": "https://exemplo.com/algoritmos",
+  "description": "Material para graduacao com implementacoes em Python.",
+  "resource_url": "https://exemplo.com/algoritmos",
   "license": "CC BY-SA 4.0",
-  "resource_type": "ebook",
+  "format": "text",
+  "subject_area": "Computacao",
+  "education_level": "superior",
   "author": "Prof. Carlos Lima",
-  "language": "pt-BR",
-  "thumbnail_url": "https://exemplo.com/thumb.jpg"
+  "language": "pt_br",
+  "thumbnail_url": "https://exemplo.com/thumb.jpg",
+  "tags": ["algoritmos", "python", "estruturas-de-dados"]
 }
 
-### ── ERROS (para testar validações) ─────────────────────────────────────── ###
-
-### Registrar sem nome (deve retornar 400)
-POST {{base}}/api/auth/register
-Content-Type: application/json
-
-{
-  "email": "sem@nome.com",
-  "password": "senha123"
-}
-
-### Login com senha errada (deve retornar 401)
-POST {{base}}/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "ana@exemplo.com",
-  "password": "senhaerrada"
-}
-
-### Submeter REA sem token (deve retornar 401)
-POST {{base}}/api/reas/
-Content-Type: application/json
-
-{
-  "title": "Teste sem auth",
-  "url": "https://exemplo.com",
-  "license": "CC BY 4.0",
-  "resource_type": "video"
-}
-
-### Submeter REA com tipo inválido (deve retornar 400)
-POST {{base}}/api/reas/
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-{
-  "title": "REA Teste",
-  "description": "Desc",
-  "url": "https://exemplo.com/teste",
-  "license": "CC BY 4.0",
-  "resource_type": "tipo_invalido"
-}
+### Formatos válidos: video | audio | text | image | interactive | slides | other
 
 
-### ── INTERAÇÕES (Sprint 4) ──────────────────────────────────────────────── ###
+### ── Interações (requer token) ──────────────────────────────────────────────── ###
 
-### Registrar visualização de um REA (requer token)
+### Registrar visualização
 POST {{base}}/api/reas/{{rea_id}}/visualizacao
 Authorization: Bearer {{token}}
 
-### Avaliar um REA (score de 1 a 5, requer token)
+### Avaliar REA (score 1–5)
 POST {{base}}/api/reas/{{rea_id}}/avaliacoes
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "score": 5
+  "score": 5,
+  "comment": "Excelente material, muito didático!"
 }
 
-### Classificar REA com tags (requer token)
+### Classificar REA com tags (string labels)
 POST {{base}}/api/reas/{{rea_id}}/tags
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "tag_ids": [1, 2]
+  "tags": ["python", "iniciantes", "programacao"]
 }
 
 
-### ── COLEÇÕES (Sprint 3) ─────────────────────────────────────────────────── ###
+### ── Coleções (requer token) ─────────────────────────────────────────────────── ###
 
-### Criar coleção (requer token)
+### Criar coleção
 POST {{base}}/api/colecoes/
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "name": "Minha Coleção de Python"
+  "title": "Minha Colecao de Python",
+  "visibility": "private"
 }
 
-### Listar minhas coleções (requer token)
+### Listar minhas coleções
 GET {{base}}/api/colecoes/
 Authorization: Bearer {{token}}
 
-### Detalhar coleção por ID (requer token)
+### Detalhar coleção por ID
 GET {{base}}/api/colecoes/{{colecao_id}}
 Authorization: Bearer {{token}}
 
-### Adicionar REA a uma coleção (requer token)
+### Adicionar REA a uma coleção
 POST {{base}}/api/colecoes/{{colecao_id}}/items
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -177,37 +136,107 @@ Authorization: Bearer {{token}}
   "rea_id": "{{rea_id}}"
 }
 
-### Remover REA de uma coleção (requer token)
+### Remover REA de uma coleção
 DELETE {{base}}/api/colecoes/{{colecao_id}}/items/{{rea_id}}
 Authorization: Bearer {{token}}
 
-### Deletar coleção (requer token)
+### Deletar coleção
 DELETE {{base}}/api/colecoes/{{colecao_id}}
 Authorization: Bearer {{token}}
 
 
-### ── PERFIL DE INTERESSES (Sprint 3) ────────────────────────────────────── ###
+### ── Perfil de Interesses (requer token) ────────────────────────────────────── ###
 
-### Ver interesses do perfil (requer token)
+### Ver interesses do perfil
 GET {{base}}/api/perfil/interesses
 Authorization: Bearer {{token}}
 
-### Atualizar interesses do perfil (requer token)
+### Atualizar interesses (tag_id deve ser UUID de um registro em public.tags)
 PUT {{base}}/api/perfil/interesses
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "interesses": [1, 2]
+  "interesses": [
+    { "tag_id": "00000000-0000-0000-0000-000000000010", "weight": 5.0 },
+    { "tag_id": "00000000-0000-0000-0000-000000000011", "weight": 2.0 }
+  ]
 }
 
 
-### ── RECOMENDAÇÕES (Sprint 4) ───────────────────────────────────────────── ###
+### ── Recomendações (requer token) ───────────────────────────────────────────── ###
 
-### Feed de REAs recomendados (requer token)
+### Feed de REAs recomendados
 GET {{base}}/api/recomendacoes/
 Authorization: Bearer {{token}}
 
 ### Feed com limite customizado
 GET {{base}}/api/recomendacoes/?limit=5
 Authorization: Bearer {{token}}
+
+
+### ── Denúncias (requer token) ───────────────────────────────────────────────── ###
+
+### Denunciar REA
+# Motivos válidos: inappropriate | broken_link | copyright | misinformation | spam | other
+POST {{base}}/api/denuncias/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rea_id": "{{rea_id}}",
+  "reason": "broken_link",
+  "detail": "O link retorna 404 desde ontem."
+}
+
+
+### ── Admin (requer token com role=admin em user_roles) ─────────────────────── ###
+
+### Listar REAs sob revisão
+GET {{base}}/api/admin/revisao
+Authorization: Bearer {{token}}
+
+### Aprovar REA (restaura para ativo, fecha denúncias)
+POST {{base}}/api/admin/aprovar/{{rea_id}}
+Authorization: Bearer {{token}}
+
+### Remover REA definitivamente (CASCADE: avaliações, denúncias, itens de coleção)
+POST {{base}}/api/admin/remover/{{rea_id}}
+Authorization: Bearer {{token}}
+
+### Estatísticas do sistema
+GET {{base}}/api/admin/estatisticas
+Authorization: Bearer {{token}}
+
+
+### ── Erros comuns (para testar validações) ──────────────────────────────────── ###
+
+### Submeter REA sem token (deve retornar 401)
+POST {{base}}/api/reas/
+Content-Type: application/json
+
+{
+  "title": "Teste sem auth",
+  "resource_url": "https://exemplo.com",
+  "license": "CC BY 4.0",
+  "format": "video",
+  "subject_area": "Ciencias",
+  "education_level": "ensino_medio"
+}
+
+### Submeter REA com formato inválido (deve retornar 400)
+POST {{base}}/api/reas/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "REA Teste",
+  "resource_url": "https://exemplo.com/teste",
+  "license": "CC BY 4.0",
+  "format": "tipo_invalido",
+  "subject_area": "Ciencias",
+  "education_level": "ensino_medio"
+}
+
+### Filtro com min_rating inválido (deve retornar 400)
+GET {{base}}/api/reas/?min_rating=naoEnumero

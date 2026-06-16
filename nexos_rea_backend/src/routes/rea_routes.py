@@ -9,14 +9,25 @@ rea_bp = Blueprint("reas", __name__)
 
 @rea_bp.get("/")
 def list_reas():
-    q = request.args.get("q", "").strip() or None
-    try:
-        page = max(1, int(request.args.get("page", 1)))
-        per_page = max(1, int(request.args.get("per_page", 10)))
-    except ValueError:
-        return error("Parametros de paginacao invalidos.", 400)
+    q               = request.args.get("q", "").strip() or None
+    fmt             = request.args.get("format", "").strip() or None
+    education_level = request.args.get("education_level", "").strip() or None
+    subject_area    = request.args.get("subject_area", "").strip() or None
+    language        = request.args.get("language", "").strip() or None
 
-    result = rea_service.list_reas(q=q, page=page, per_page=per_page)
+    try:
+        page      = max(1, int(request.args.get("page", 1)))
+        per_page  = max(1, int(request.args.get("per_page", 10)))
+        raw_min   = request.args.get("min_rating")
+        min_rating = float(raw_min) if raw_min else None
+    except ValueError:
+        return error("Parametros de filtragem invalidos.", 400)
+
+    result = rea_service.list_reas(
+        q=q, page=page, per_page=per_page,
+        format=fmt, education_level=education_level,
+        subject_area=subject_area, language=language, min_rating=min_rating,
+    )
     return success(data=result)
 
 
