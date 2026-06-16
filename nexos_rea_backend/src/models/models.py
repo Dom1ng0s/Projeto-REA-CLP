@@ -17,6 +17,12 @@ class RoleEnum(PyEnum):
     admin = "admin"
 
 
+class StatusREAEnum(PyEnum):
+    ativo = "ativo"
+    oculto = "oculto"           # gatilho: avg_rating < 2.0
+    sob_revisao = "sob_revisao" # gatilho: report_count >= 3 (requer julgamento admin)
+
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -73,6 +79,13 @@ class REA(db.Model):
     avg_rating = db.Column(db.Float, nullable=False, default=0.0)
     rating_count = db.Column(db.Integer, nullable=False, default=0)
     report_count = db.Column(db.Integer, nullable=False, default=0)
+    status = db.Column(
+        db.Enum(StatusREAEnum),
+        nullable=False,
+        default=StatusREAEnum.ativo,
+        index=True,
+    )
+    # Mantidos para compatibilidade com registros legados; novos fluxos usam `status`.
     is_visible = db.Column(db.Boolean, nullable=False, default=True)
     is_blocked = db.Column(db.Boolean, nullable=False, default=False)
     submitted_by = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -114,6 +127,7 @@ class Rating(db.Model):
 
 
 class Report(db.Model):
+    """Denúncia de um usuário contra um REA. Um usuário só pode denunciar cada REA uma vez."""
     __tablename__ = "reports"
     __table_args__ = (
         UniqueConstraint("user_id", "rea_id", name="uq_report_user_rea"),
@@ -125,6 +139,9 @@ class Report(db.Model):
     reason = db.Column(db.String(100), nullable=False)
     detail = db.Column(db.Text)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
+    # Campos de resolução — preenchidos pelo Admin ao julgar
+    reviewed = db.Column(db.Boolean, nullable=False, default=False)
+    reviewed_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     user = db.relationship("User", back_populates="reports")
     rea = db.relationship("REA", back_populates="reports")

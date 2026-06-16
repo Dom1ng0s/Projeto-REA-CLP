@@ -1,6 +1,7 @@
 import uuid
 
 from src.repositories import colecao_repository, rea_repository
+from src.models.models import StatusREAEnum
 from src.services import interacao_service
 
 
@@ -46,7 +47,7 @@ def adicionar_rea(user_id: str, collection_id: str, rea_id: str) -> dict:
         raise ValueError("ID de REA invalido.")
 
     rea = rea_repository.find_by_id(rid)
-    if not rea or not rea.is_visible or rea.is_blocked:
+    if not rea or rea.status != StatusREAEnum.ativo:
         raise LookupError("REA nao encontrado.")
 
     cid = uuid.UUID(collection_id)

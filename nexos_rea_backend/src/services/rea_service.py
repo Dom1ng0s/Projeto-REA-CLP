@@ -1,9 +1,9 @@
 import uuid
 
 from src.extensions.database import db
-from src.models.models import Rating
+from src.models.models import Rating, StatusREAEnum
 from src.repositories import perfil_repository, rea_repository
-from src.services import interacao_service
+from src.services import interacao_service, moderacao_service
 
 _ALLOWED_TYPES = {"video", "article", "course", "ebook", "exercise", "other"}
 _MAX_PER_PAGE = 50
@@ -75,6 +75,7 @@ def avaliar_rea(data: dict, rea_id: str, user_id: str) -> dict:
         ))
 
     _recalcular_avg_rating(rea)
+    moderacao_service.aplicar_gatilho_avaliacao(rea)
     db.session.commit()
 
     evento = interacao_service.evento_para_avaliacao(score)
@@ -130,7 +131,7 @@ def _get_visible_or_raise(rea_id: str):
     except (ValueError, AttributeError):
         raise ValueError("REA nao encontrado.")
 
-    if not rea or rea.is_blocked or not rea.is_visible:
+    if not rea or rea.status != StatusREAEnum.ativo:
         raise ValueError("REA nao encontrado.")
     return rea
 
