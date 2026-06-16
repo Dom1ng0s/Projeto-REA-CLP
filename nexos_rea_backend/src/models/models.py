@@ -7,9 +7,9 @@ from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from src.extensions.database import db
 
 
-def _pg_enum(name: str) -> sa.Enum:
-    """Referencia um enum PostgreSQL já existente sem tentar criá-lo."""
-    return sa.Enum(name=name, create_type=False)
+def _pg_enum(name: str, *values: str) -> sa.Enum:
+    """Mapeia um enum PostgreSQL existente — create_type=False não tenta criá-lo."""
+    return sa.Enum(*values, name=name, create_type=False)
 
 
 def _now():
@@ -57,13 +57,24 @@ class REA(db.Model):
     thumbnail_url = db.Column(db.Text)
     source_url    = db.Column(db.Text)
     author        = db.Column(db.Text)
-    format          = db.Column(_pg_enum("rea_format"),      nullable=False)
-    license         = db.Column(_pg_enum("rea_license"),     nullable=False)
-    language        = db.Column(_pg_enum("rea_language"),    nullable=False, default="pt_br")
+    format          = db.Column(_pg_enum("rea_format",
+                        "video", "audio", "text", "image", "interactive", "slides", "other"),
+                        nullable=False)
+    license         = db.Column(_pg_enum("rea_license",
+                        "cc_by", "cc_by_sa", "cc_by_nc", "cc_by_nc_sa",
+                        "cc_by_nd", "cc0", "public_domain", "other"),
+                        nullable=False)
+    language        = db.Column(_pg_enum("rea_language", "pt_br", "en", "es", "other"),
+                        nullable=False, default="pt_br")
     subject_area    = db.Column(db.Text, nullable=False)
-    education_level = db.Column(_pg_enum("education_level"), nullable=False)
+    education_level = db.Column(_pg_enum("education_level",
+                        "infantil", "fundamental", "medio", "tecnico",
+                        "graduacao", "pos_graduacao", "extensao", "livre"),
+                        nullable=False)
     tags            = db.Column(ARRAY(db.Text), nullable=False, default=list)
-    status          = db.Column(_pg_enum("rea_status"),      nullable=False, default=REA_STATUS_ACTIVE, index=True)
+    status          = db.Column(_pg_enum("rea_status",
+                        "active", "hidden_low_rating", "blocked_review", "removed"),
+                        nullable=False, default=REA_STATUS_ACTIVE, index=True)
     rating_avg    = db.Column(db.Numeric(3, 2), nullable=False, default=0)
     rating_count  = db.Column(db.Integer, nullable=False, default=0)
     report_count  = db.Column(db.Integer, nullable=False, default=0)
@@ -151,9 +162,13 @@ class REAReport(db.Model):
     id          = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     rea_id      = db.Column(UUID(as_uuid=True), db.ForeignKey("reas.id", ondelete="CASCADE"), nullable=False)
     user_id     = db.Column(UUID(as_uuid=True), nullable=False)
-    reason      = db.Column(_pg_enum("report_reason"), nullable=False)
+    reason      = db.Column(_pg_enum("report_reason",
+                    "inappropriate", "broken_link", "copyright",
+                    "misinformation", "spam", "other"),
+                    nullable=False)
     details     = db.Column(db.Text)
-    state       = db.Column(_pg_enum("report_state"),  nullable=False, default="pending")
+    state       = db.Column(_pg_enum("report_state", "pending", "dismissed", "accepted"),
+                    nullable=False, default="pending")
     resolved_by = db.Column(UUID(as_uuid=True), nullable=True)
     resolved_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at  = db.Column(db.DateTime(timezone=True), nullable=False, default=_now)
