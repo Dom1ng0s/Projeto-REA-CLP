@@ -8,9 +8,11 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type Rea = Database["public"]["Tables"]["reas"]["Row"];
 
+// SSR (Cloudflare Worker): globalThis.BACKEND_API_URL via wrangler vars
+// Client-side (browser): import.meta.env.VITE_BACKEND_API_URL baked no bundle pelo Vite
 const BASE_URL =
   (typeof globalThis !== "undefined" && (globalThis as any).BACKEND_API_URL) ||
-  (typeof process !== "undefined" && process.env?.BACKEND_API_URL) ||
+  import.meta.env?.VITE_BACKEND_API_URL ||
   "http://localhost:5000";
 
 interface FlaskPagination {
