@@ -12,5 +12,20 @@ services:
     volumes:
       - nexos_rea_data:/var/lib/postgresql/data
 
+  backend:
+    build: .
+    container_name: nexos_rea_backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Sobrescreve DATABASE_URL para apontar ao Supabase (definido no .env).
+      # Para testes locais trocando para o serviço db acima:
+      #   DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/nexos_rea
+      FLASK_ENV: development
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
 volumes:
   nexos_rea_data:

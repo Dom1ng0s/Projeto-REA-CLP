@@ -191,17 +191,21 @@ O frontend (`nexos-rea`) foi gerado via Lovable e conversa **diretamente com o S
 
 ---
 
-### Sprint D — CORS e Variáveis de Ambiente
+### Sprint D — CORS e Variáveis de Ambiente ✅ CONCLUÍDA
 **Estimativa:** 0,5 dia · **Prioridade:** Bloqueante (sem isso o browser bloqueia as chamadas)
 
 #### Backend (Flask)
-- [ ] Instalar `flask-cors` e configurar `origins` para o domínio do Cloudflare Workers
-- [ ] Adicionar `SUPABASE_JWT_SECRET` ao `.env` e ao `config.py`
-- [ ] Atualizar `docker-compose.yml` para ambiente local com as novas vars
+- [x] `flask-cors` instalado (`Flask-Cors==4.0.0`); `CORS(app, origins=...)` configurado via `CORS_ORIGINS` no `.env`
+- [x] `SUPABASE_JWT_SECRET` em `.env` e em `config.py`
+- [x] `docker-compose.yml` atualizado com serviço `backend` usando `env_file: .env`
+- [x] `.env.example` criado para o backend
 
 #### Frontend
-- [ ] Confirmar que `wrangler.jsonc` / `wrangler.deploy.jsonc` tem as vars de ambiente corretas para produção
-- [ ] Atualizar `.env.example` do repositório frontend com todas as vars necessárias
+- [x] `wrangler.jsonc` e `wrangler.deploy.jsonc` confirmados com `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`
+- [x] `.env.example` do frontend já completo com todas as vars
+
+#### Atenção pós-deploy
+- Atualizar `CORS_ORIGINS` no `.env` de produção com o domínio real do Cloudflare Workers (ex.: `https://nexos-rea.SEU_ACCOUNT.workers.dev`)
 
 ---
 

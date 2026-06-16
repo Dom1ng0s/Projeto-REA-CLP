@@ -11,6 +11,9 @@ class Config:
     SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
     SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "")
 
+    _raw_origins = os.environ.get("CORS_ORIGINS", "http://localhost:8787,http://localhost:5173")
+    CORS_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_AS_ASCII = False
 

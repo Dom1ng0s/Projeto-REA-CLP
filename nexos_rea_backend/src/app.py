@@ -16,7 +16,7 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    CORS(app)
+    CORS(app, origins=app.config["CORS_ORIGINS"])
     db.init_app(app)
 
     app.register_blueprint(rea_bp,          url_prefix="/api/reas")
