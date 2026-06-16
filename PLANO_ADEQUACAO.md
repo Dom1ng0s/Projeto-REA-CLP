@@ -146,18 +146,21 @@ O frontend (`nexos-rea`) foi gerado via Lovable e conversa **diretamente com o S
 
 ---
 
-### Sprint B — RPC Functions PostgreSQL
+### Sprint B — RPC Functions PostgreSQL ✅ CONCLUÍDA
 **Estimativa:** 2–3 dias · **Prioridade:** Bloqueante (catálogo e admin não funcionam sem isso)
 
 #### Backend (SQL/Supabase)
-- [ ] `get_recommended_feed(p_limit int)` — portando a lógica de `recomendacao_service.py`: join `user_interests × rea_tags`, score ponderado por peso, retorna array de `reas`
-- [ ] `admin_list_reas(p_statuses text[], p_limit int, p_offset int)` — portando `admin_service.listar_sob_revisao()`, filtro por array de status, retorna REAs + denúncias pendentes
-- [ ] `admin_set_rea_status(p_rea_id uuid, p_new_status rea_status)` — unifica `aprovar_rea()` e `remover_rea()`
-- [ ] `admin_resolve_report(p_report_id int, p_resolution text)` — marca denúncia como revisada
-- [ ] `ensure_favorites_collection()` — cria coleção "Favoritos" (`is_system = true`) para o usuário autenticado se não existir
+- [x] `get_recommended_feed(p_limit int)` — TF-IDF ponderado por peso de interesse + penalidade de itens vistos recentemente. Migration: `20260608232719` (refinado em `20260608233207`)
+- [x] `admin_list_reas(p_statuses text[], p_query text, p_limit int, p_offset int)` — filtro por status[], busca textual, paginação, retorna `{ total, items[] }` com denúncias pendentes embutidas. Migration: `20260613191007`
+- [x] `admin_set_rea_status(p_rea_id uuid, p_status text)` — unifica aprovar/remover, resolve reports pendentes automaticamente. Migration: `20260613191007`
+- [x] `admin_resolve_report(p_rea_id uuid, p_decision text)` — `'restore'` descarta denúncias; `'remove'` aceita e muda status. Migration: `20260609002626`
+- [x] `ensure_favorites_collection(_user_id uuid)` — cria coleção `is_system = true` se não existir; trigger automático no signup. Migration: `20260610005428`
+- [x] Funções auxiliares: `has_role`, `event_delta`, `decay_user_interests` (cron diário 03h), `get_admin_metrics`, `get_moderation_queue`
 
 #### Frontend
-- [ ] Nenhuma alteração necessária nesta sprint (o frontend já chama essas RPCs)
+- [x] Nenhuma alteração necessária nesta sprint (o frontend já chama essas RPCs)
+
+> **Atenção:** Confirmar que todas as migrations estão aplicadas ao projeto Supabase com `supabase db push` antes de testar.
 
 ---
 

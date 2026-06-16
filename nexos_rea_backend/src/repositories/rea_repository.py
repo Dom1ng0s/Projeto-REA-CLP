@@ -35,8 +35,8 @@ def create(data: dict) -> REA:
 
 
 def list_recommended(user_id: uuid.UUID, limit: int) -> list[tuple]:
-    # Sprint A: filter REAs whose tags overlap with user's interested tag labels,
-    # ordered by rating. Sprint B replaces this with a Supabase RPC call.
+    # Flask path for /api/recomendacoes/ — kept for backend API consumers.
+    # Frontend uses the Supabase RPC get_recommended_feed() directly (Sprint B).
     tag_labels_subq = (
         db.select(func.array_agg(Tag.label))
         .join(UserInterest, UserInterest.tag_id == Tag.id)
