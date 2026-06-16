@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tanstack-start-app",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/server.ts",
+  // Variáveis públicas usadas no SSR (a publishable key é pública por design).
+  // A SUPABASE_SERVICE_ROLE_KEY NÃO vai aqui — é secret: `npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`
+  "vars": {
+    "SUPABASE_URL": "https://nwpedilylyramuflhmhd.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_Wip6NKOawjUHCXuxQRMibw_qCWGXLTv",
+    "BACKEND_API_URL": "http://localhost:5000"
+  }
+}

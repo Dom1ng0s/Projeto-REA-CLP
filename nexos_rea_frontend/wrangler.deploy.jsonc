@@ -1,0 +1,23 @@
+{
+  // Config usada APENAS para deploy em produção (não para o dev).
+  // Aponta para a saída já compilada pelo `npm run build`:
+  //   worker  -> dist/server/server.js
+  //   assets  -> dist/client
+  // Uso:
+  //   npm run build
+  //   npx wrangler deploy -c wrangler.deploy.jsonc
+  //   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY -c wrangler.deploy.jsonc
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nexos-rea",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "dist/server/server.js",
+  "assets": { "directory": "./dist/client" },
+  // Variáveis públicas (a publishable key é pública por design).
+  // A SUPABASE_SERVICE_ROLE_KEY NÃO vai aqui — é secret via `wrangler secret put`.
+  "vars": {
+    "SUPABASE_URL": "https://nwpedilylyramuflhmhd.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_Wip6NKOawjUHCXuxQRMibw_qCWGXLTv",
+    "BACKEND_API_URL": "https://nexos-rea-backend.up.railway.app"
+  }
+}
