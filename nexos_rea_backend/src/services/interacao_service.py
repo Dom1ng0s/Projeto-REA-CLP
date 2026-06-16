@@ -1,29 +1,35 @@
 import uuid
 
-from src.repositories import perfil_repository, rea_repository
+from src.extensions.database import db
+from src.models.models import REAInteraction
 
-_DELTAS: dict[str, float] = {
-    "visualizacao":       0.5,
-    "adicionar_colecao":  1.5,
-    "remover_colecao":   -0.5,
-    "avaliacao_positiva": 2.0,   # score 4-5
-    "avaliacao_negativa": -1.0,  # score 1-2
+# Mapeamento evento Flask → event_type Supabase
+_EVENTO_MAP: dict[str, str] = {
+    "visualizacao":       "view",
+    "adicionar_colecao":  "save_to_collection",
+    "remover_colecao":    "remove_from_collection",
+    "avaliacao_positiva": "rating",
+    "avaliacao_negativa": "rating",
+    "view":               "view",
+    "rating":             "rating",
 }
 
-EVENTOS_VALIDOS = set(_DELTAS.keys())
+EVENTOS_VALIDOS = set(_EVENTO_MAP.keys())
 
 
-def recalcular_pesos(user_id: str, rea_id: str, evento: str) -> None:
-    if evento not in _DELTAS:
-        raise ValueError(f"Evento invalido. Use: {', '.join(sorted(EVENTOS_VALIDOS))}.")
-
-    delta = _DELTAS[evento]
-    uid = uuid.UUID(user_id)
-    rid = uuid.UUID(rea_id)
-
-    tags = rea_repository.find_tags(rid)
-    for tag in tags:
-        perfil_repository.upsert_weight(uid, tag.tag_id, delta)
+def registrar_interacao(user_id: str, rea_id: str, evento: str, value: float = 0.0) -> None:
+    """
+    Insere um registro em rea_interactions.
+    O trigger recompute_user_interests do Supabase recalcula user_interests automaticamente.
+    """
+    event_type = _EVENTO_MAP.get(evento, evento)
+    db.session.add(REAInteraction(
+        user_id=uuid.UUID(user_id),
+        rea_id=uuid.UUID(rea_id),
+        event_type=event_type,
+        value=value,
+    ))
+    db.session.commit()
 
 
 def evento_para_avaliacao(score: int) -> str:

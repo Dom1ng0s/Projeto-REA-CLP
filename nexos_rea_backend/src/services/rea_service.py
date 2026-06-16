@@ -1,18 +1,17 @@
 import uuid
 
 from src.extensions.database import db
-from src.models.models import Rating, StatusREAEnum
-from src.repositories import perfil_repository, rea_repository
+from src.models.models import REA, REARating, REA_STATUS_ACTIVE
+from src.repositories import rea_repository
 from src.services import interacao_service, moderacao_service
 
-_ALLOWED_TYPES = {"video", "article", "course", "ebook", "exercise", "other"}
+_ALLOWED_FORMATS = {"video", "audio", "text", "image", "interactive", "slides", "other"}
 _MAX_PER_PAGE = 50
 
 
 def list_reas(q: str | None, page: int, per_page: int) -> dict:
     per_page = min(per_page, _MAX_PER_PAGE)
     pagination = rea_repository.list_visible(q=q, page=page, per_page=per_page)
-
     return {
         "items": [_serialize(r) for r in pagination.items],
         "pagination": {
@@ -25,140 +24,132 @@ def list_reas(q: str | None, page: int, per_page: int) -> dict:
 
 
 def get_rea(rea_id: str) -> dict:
-    rea = _get_visible_or_raise(rea_id)
+    rea = _get_active_or_raise(rea_id)
     return _serialize(rea)
 
 
 def submit_rea(data: dict, user_id: str) -> dict:
     _validate(data)
 
-    url = data["url"].strip()
-    if rea_repository.find_by_url(url):
+    resource_url = data["resource_url"].strip()
+    if rea_repository.find_by_url(resource_url):
         raise ValueError("Ja existe um REA cadastrado com essa URL.")
 
     rea = rea_repository.create({
-        "title": data["title"].strip(),
-        "description": data["description"].strip(),
-        "url": data["url"].strip(),
-        "author": data.get("author", "").strip() or None,
-        "license": data["license"].strip(),
-        "resource_type": data["resource_type"].strip().lower(),
-        "language": data.get("language", "pt-BR").strip(),
-        "thumbnail_url": data.get("thumbnail_url", "").strip() or None,
-        "submitted_by": uuid.UUID(user_id),
+        "title":           data["title"].strip(),
+        "description":     data.get("description", "").strip() or None,
+        "resource_url":    resource_url,
+        "author":          data.get("author", "").strip() or None,
+        "license":         data["license"].strip(),
+        "format":          data["format"].strip().lower(),
+        "language":        data.get("language", "pt_br").strip(),
+        "subject_area":    data["subject_area"].strip(),
+        "education_level": data["education_level"].strip(),
+        "thumbnail_url":   data.get("thumbnail_url", "").strip() or None,
+        "tags":            data.get("tags", []),
+        "submitted_by":    uuid.UUID(user_id),
     })
     return _serialize(rea)
 
 
 def avaliar_rea(data: dict, rea_id: str, user_id: str) -> dict:
-    score = data.get("score")
-    if not isinstance(score, int) or not (1 <= score <= 5):
+    rating_val = data.get("score") or data.get("rating")
+    if not isinstance(rating_val, int) or not (1 <= rating_val <= 5):
         raise ValueError("O campo 'score' deve ser um inteiro entre 1 e 5.")
 
-    rea = _get_visible_or_raise(rea_id)
+    rea = _get_active_or_raise(rea_id)
     uid = uuid.UUID(user_id)
     rid = rea.id
 
     existing = db.session.execute(
-        db.select(Rating).where(Rating.user_id == uid, Rating.rea_id == rid)
+        db.select(REARating).where(REARating.user_id == uid, REARating.rea_id == rid)
     ).scalar_one_or_none()
 
     if existing:
-        existing.score = score
+        existing.rating = rating_val
         existing.comment = data.get("comment", existing.comment)
     else:
-        db.session.add(Rating(
+        db.session.add(REARating(
             user_id=uid,
             rea_id=rid,
-            score=score,
+            rating=rating_val,
             comment=data.get("comment"),
         ))
 
-    _recalcular_avg_rating(rea)
-    moderacao_service.aplicar_gatilho_avaliacao(rea)
     db.session.commit()
 
-    evento = interacao_service.evento_para_avaliacao(score)
+    # Supabase trigger (recompute_rea_rating) recalcula rating_avg e status automaticamente.
+    # Registra a interação para o motor de recomendação.
+    evento = interacao_service.evento_para_avaliacao(rating_val)
     if evento:
-        interacao_service.recalcular_pesos(user_id, rea_id, evento)
+        interacao_service.registrar_interacao(user_id, rea_id, evento, value=float(rating_val))
 
+    db.session.refresh(rea)
     return {
         "rea_id": rea_id,
-        "score": score,
-        "avg_rating": rea.avg_rating,
+        "rating": rating_val,
+        "rating_avg": float(rea.rating_avg),
         "rating_count": rea.rating_count,
     }
 
 
 def classificar_rea(rea_id: str, data: dict, user_id: str) -> dict:
-    rea = _get_visible_or_raise(rea_id)
+    rea = _get_active_or_raise(rea_id)
 
-    tag_ids = data.get("tag_ids", [])
-    if not isinstance(tag_ids, list) or not tag_ids:
-        raise ValueError("O campo 'tag_ids' deve ser uma lista nao-vazia de inteiros.")
+    tags = data.get("tags", [])
+    if not isinstance(tags, list) or not tags:
+        raise ValueError("O campo 'tags' deve ser uma lista nao-vazia de strings.")
 
-    validated: list[int] = []
-    for tid in tag_ids:
-        if not isinstance(tid, int) or tid <= 0:
-            raise ValueError(f"tag_id invalido: {tid}.")
-        if not perfil_repository.find_tag_by_id(tid):
-            raise LookupError(f"Tag com id={tid} nao encontrada.")
-        validated.append(tid)
+    validated = [str(t).strip().lower() for t in tags if str(t).strip()]
+    if not validated:
+        raise ValueError("Nenhuma tag valida fornecida.")
 
-    rea_repository.add_tags(rea.id, validated)
+    existing = set(rea.tags or [])
+    rea.tags = list(existing | set(validated))
+    db.session.commit()
 
-    tags = rea_repository.find_tags(rea.id)
-    return {
-        "rea_id": rea_id,
-        "tags": [{"tag_id": t.tag_id} for t in tags],
-    }
+    return {"rea_id": rea_id, "tags": rea.tags}
 
 
-def _recalcular_avg_rating(rea) -> None:
-    result = db.session.execute(
-        db.select(
-            db.func.avg(Rating.score).label("avg"),
-            db.func.count(Rating.id).label("count"),
-        ).where(Rating.rea_id == rea.id)
-    ).one()
-    rea.avg_rating = round(float(result.avg or 0.0), 2)
-    rea.rating_count = result.count
-
-
-def _get_visible_or_raise(rea_id: str):
+def _get_active_or_raise(rea_id: str) -> REA:
     try:
         rea = rea_repository.find_by_id(uuid.UUID(rea_id))
     except (ValueError, AttributeError):
         raise ValueError("REA nao encontrado.")
 
-    if not rea or rea.status != StatusREAEnum.ativo:
+    if not rea or rea.status != REA_STATUS_ACTIVE:
         raise ValueError("REA nao encontrado.")
     return rea
 
 
 def _validate(data: dict) -> None:
-    required = ["title", "description", "url", "license", "resource_type"]
+    required = ["title", "resource_url", "license", "format", "subject_area", "education_level"]
     for field in required:
         if not data.get(field, "").strip():
             raise ValueError(f"O campo '{field}' e obrigatorio.")
 
-    if data["resource_type"].strip().lower() not in _ALLOWED_TYPES:
-        raise ValueError(f"Tipo invalido. Use: {', '.join(sorted(_ALLOWED_TYPES))}.")
+    if data["format"].strip().lower() not in _ALLOWED_FORMATS:
+        raise ValueError(f"Formato invalido. Use: {', '.join(sorted(_ALLOWED_FORMATS))}.")
 
 
 def _serialize(rea) -> dict:
     return {
-        "id": str(rea.id),
-        "title": rea.title,
-        "description": rea.description,
-        "url": rea.url,
-        "author": rea.author,
-        "license": rea.license,
-        "resource_type": rea.resource_type,
-        "language": rea.language,
-        "thumbnail_url": rea.thumbnail_url,
-        "avg_rating": rea.avg_rating,
-        "rating_count": rea.rating_count,
-        "submitted_by": str(rea.submitted_by) if rea.submitted_by else None,
-        "created_at": rea.created_at.isoformat(),
+        "id":              str(rea.id),
+        "title":           rea.title,
+        "description":     rea.description,
+        "resource_url":    rea.resource_url,
+        "author":          rea.author,
+        "license":         rea.license,
+        "format":          rea.format,
+        "language":        rea.language,
+        "subject_area":    rea.subject_area,
+        "education_level": rea.education_level,
+        "tags":            rea.tags or [],
+        "thumbnail_url":   rea.thumbnail_url,
+        "rating_avg":      float(rea.rating_avg),
+        "rating_count":    rea.rating_count,
+        "status":          rea.status,
+        "submitted_by":    str(rea.submitted_by) if rea.submitted_by else None,
+        "created_at":      rea.created_at.isoformat(),
+        "updated_at":      rea.updated_at.isoformat(),
     }

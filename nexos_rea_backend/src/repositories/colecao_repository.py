@@ -20,8 +20,8 @@ def list_by_user(user_id: uuid.UUID) -> list[Collection]:
     return list(result.scalars())
 
 
-def create(user_id: uuid.UUID, name: str, is_public: bool) -> Collection:
-    col = Collection(user_id=user_id, name=name, is_public=is_public)
+def create(user_id: uuid.UUID, title: str, visibility: str) -> Collection:
+    col = Collection(user_id=user_id, title=title, visibility=visibility)
     db.session.add(col)
     db.session.commit()
     return col

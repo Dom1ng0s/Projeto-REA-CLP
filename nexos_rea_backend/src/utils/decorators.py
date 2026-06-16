@@ -1,21 +1,39 @@
 from functools import wraps
 
-from flask import g
-from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
-
-from src.models.models import RoleEnum
-from src.repositories import user_repository
+from src.extensions.database import db
+from src.models.models import UserRole
+from src.utils.auth import _decode_token, _get_bearer_token
 from src.utils.responses import error
 
 
 def admin_required(fn):
-    """Garante que apenas usuários com role=admin acessem a rota."""
+    """Valida JWT do Supabase e verifica role='admin' em user_roles."""
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        verify_jwt_in_request()
-        user = user_repository.find_by_id(get_jwt_identity())
-        if not user or not user.is_active or user.role != RoleEnum.admin:
+        from flask import g
+        token = _get_bearer_token()
+        if not token:
+            return error("Token de autenticacao ausente.", 401)
+        try:
+            import jwt as pyjwt
+            payload = _decode_token(token)
+        except pyjwt.ExpiredSignatureError:
+            return error("Token expirado.", 401)
+        except pyjwt.InvalidTokenError:
+            return error("Token invalido.", 422)
+
+        user_id = payload["sub"]
+        import uuid
+        is_admin = db.session.execute(
+            db.select(UserRole).where(
+                UserRole.user_id == uuid.UUID(user_id),
+                UserRole.role == "admin",
+            )
+        ).scalar_one_or_none()
+
+        if not is_admin:
             return error("Acesso restrito a administradores.", 403)
-        g.admin = user
+
+        g.user_id = user_id
         return fn(*args, **kwargs)
     return wrapper

@@ -3,43 +3,36 @@ import uuid
 from sqlalchemy.orm import selectinload
 
 from src.extensions.database import db
-from src.models.models import Tag, UserTagInterest
+from src.models.models import Tag, UserInterest
 
 
-def find_tag_by_id(tag_id: int) -> Tag | None:
+def find_tag_by_id(tag_id) -> Tag | None:
     return db.session.get(Tag, tag_id)
 
 
-def list_interests(user_id: uuid.UUID) -> list[UserTagInterest]:
+def find_tag_by_slug(slug: str) -> Tag | None:
+    return db.session.execute(
+        db.select(Tag).where(Tag.slug == slug)
+    ).scalar_one_or_none()
+
+
+def list_interests(user_id: uuid.UUID) -> list[UserInterest]:
     result = db.session.execute(
-        db.select(UserTagInterest)
-        .where(UserTagInterest.user_id == user_id)
-        .options(selectinload(UserTagInterest.tag))
-        .order_by(UserTagInterest.weight.desc())
+        db.select(UserInterest)
+        .where(UserInterest.user_id == user_id)
+        .options(selectinload(UserInterest.tag))
+        .order_by(UserInterest.weight.desc())
     )
     return list(result.scalars())
 
 
-def upsert_weight(user_id: uuid.UUID, tag_id: int, delta: float) -> None:
-    interest = db.session.get(UserTagInterest, (user_id, tag_id))
-    if interest:
-        interest.weight = max(0.1, min(10.0, interest.weight + delta))
-    elif delta > 0:
-        db.session.add(UserTagInterest(
-            user_id=user_id,
-            tag_id=tag_id,
-            weight=min(10.0, 1.0 + delta),
-        ))
-    db.session.commit()
-
-
-def replace_interests(user_id: uuid.UUID, interesses: list[dict]) -> list[UserTagInterest]:
+def replace_interests(user_id: uuid.UUID, interesses: list[dict]) -> list[UserInterest]:
     db.session.execute(
-        db.delete(UserTagInterest).where(UserTagInterest.user_id == user_id)
+        db.delete(UserInterest).where(UserInterest.user_id == user_id)
     )
 
     for item in interesses:
-        db.session.add(UserTagInterest(
+        db.session.add(UserInterest(
             user_id=user_id,
             tag_id=item["tag_id"],
             weight=item["weight"],
@@ -47,11 +40,10 @@ def replace_interests(user_id: uuid.UUID, interesses: list[dict]) -> list[UserTa
 
     db.session.commit()
 
-    # Recarrega com relacionamento tag para evitar N+1 na serialização
     result = db.session.execute(
-        db.select(UserTagInterest)
-        .where(UserTagInterest.user_id == user_id)
-        .options(selectinload(UserTagInterest.tag))
-        .order_by(UserTagInterest.weight.desc())
+        db.select(UserInterest)
+        .where(UserInterest.user_id == user_id)
+        .options(selectinload(UserInterest.tag))
+        .order_by(UserInterest.weight.desc())
     )
     return list(result.scalars())

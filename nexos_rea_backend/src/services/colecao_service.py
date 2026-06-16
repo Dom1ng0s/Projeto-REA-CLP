@@ -1,21 +1,27 @@
 import uuid
 
 from src.repositories import colecao_repository, rea_repository
-from src.models.models import StatusREAEnum
+from src.models.models import REA_STATUS_ACTIVE
 from src.services import interacao_service
+
+_VISIBILITY_OPTS = {"private", "public"}
 
 
 def criar_colecao(user_id: str, data: dict) -> dict:
-    name = data.get("name", "").strip()
-    if not name:
-        raise ValueError("O campo 'name' e obrigatorio.")
-    if len(name) > 200:
-        raise ValueError("O nome deve ter no maximo 200 caracteres.")
+    title = data.get("title", "").strip()
+    if not title:
+        raise ValueError("O campo 'title' e obrigatorio.")
+    if len(title) > 200:
+        raise ValueError("O titulo deve ter no maximo 200 caracteres.")
+
+    visibility = data.get("visibility", "private")
+    if visibility not in _VISIBILITY_OPTS:
+        raise ValueError(f"Visibilidade invalida. Use: {', '.join(_VISIBILITY_OPTS)}.")
 
     col = colecao_repository.create(
         user_id=uuid.UUID(user_id),
-        name=name,
-        is_public=bool(data.get("is_public", False)),
+        title=title,
+        visibility=visibility,
     )
     return _serialize(col)
 
@@ -47,7 +53,7 @@ def adicionar_rea(user_id: str, collection_id: str, rea_id: str) -> dict:
         raise ValueError("ID de REA invalido.")
 
     rea = rea_repository.find_by_id(rid)
-    if not rea or rea.status != StatusREAEnum.ativo:
+    if not rea or rea.status != REA_STATUS_ACTIVE:
         raise LookupError("REA nao encontrado.")
 
     cid = uuid.UUID(collection_id)
@@ -55,11 +61,11 @@ def adicionar_rea(user_id: str, collection_id: str, rea_id: str) -> dict:
         raise ValueError("Este REA ja esta na colecao.")
 
     item = colecao_repository.add_item(cid, rid)
-    interacao_service.recalcular_pesos(user_id, rea_id, "adicionar_colecao")
+    interacao_service.registrar_interacao(user_id, rea_id, "adicionar_colecao")
     return {
         "collection_id": str(item.collection_id),
-        "rea_id": str(item.rea_id),
-        "added_at": item.added_at.isoformat(),
+        "rea_id":        str(item.rea_id),
+        "added_at":      item.added_at.isoformat(),
     }
 
 
@@ -78,10 +84,8 @@ def remover_rea(user_id: str, collection_id: str, rea_id: str) -> None:
         raise LookupError("REA nao encontrado nesta colecao.")
 
     colecao_repository.remove_item(item)
-    interacao_service.recalcular_pesos(user_id, rea_id, "remover_colecao")
+    interacao_service.registrar_interacao(user_id, rea_id, "remover_colecao")
 
-
-# --- helpers privados ---
 
 def _get_or_raise(collection_id: str):
     try:
@@ -102,9 +106,10 @@ def _assert_owner(col, user_id: str) -> None:
 
 def _serialize(col) -> dict:
     return {
-        "id": str(col.id),
-        "name": col.name,
-        "is_public": col.is_public,
+        "id":         str(col.id),
+        "title":      col.title,
+        "visibility": col.visibility,
+        "is_system":  col.is_system,
         "item_count": len(col.items),
         "created_at": col.created_at.isoformat(),
     }
@@ -115,7 +120,8 @@ def _serialize_with_items(col) -> dict:
         **_serialize(col),
         "items": [
             {
-                "rea_id": str(item.rea_id),
+                "rea_id":   str(item.rea_id),
+                "position": item.position,
                 "added_at": item.added_at.isoformat(),
             }
             for item in col.items
