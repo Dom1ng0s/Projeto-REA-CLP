@@ -70,6 +70,7 @@ export function HomeAuthPanel() {
       toast.error("Não foi possível criar a conta", { description: error.message });
       return;
     }
+    localStorage.setItem("showOnboarding", "true");
     if (data.session) {
       toast.success("Conta criada com sucesso!");
       navigate({ to: "/catalogo" });
