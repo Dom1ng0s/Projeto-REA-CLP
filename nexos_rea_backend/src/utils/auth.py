@@ -1,3 +1,4 @@
+import logging
 import uuid
 from functools import wraps
 
@@ -5,6 +6,8 @@ import jwt
 from flask import current_app, g, request
 
 from src.utils.responses import error
+
+logger = logging.getLogger(__name__)
 
 
 def _get_bearer_token() -> str | None:
@@ -39,7 +42,8 @@ def jwt_required(fn):
             payload = _decode_token(token)
         except jwt.ExpiredSignatureError:
             return error("Token expirado.", 401)
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as exc:
+            logger.error("JWT inválido [%s]: %s", type(exc).__name__, exc)
             return error("Token invalido.", 422)
         g.user_id = payload["sub"]
         return fn(*args, **kwargs)
