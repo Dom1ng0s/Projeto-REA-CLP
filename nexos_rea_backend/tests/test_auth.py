@@ -14,10 +14,10 @@ REAS_URL = "/api/reas/"
 _VALID_REA = {
     "title": "REA de Teste Auth",
     "resource_url": "https://auth-test.com/rea",
-    "license": "CC BY 4.0",
+    "license": "cc_by",
     "format": "video",
     "subject_area": "Computacao",
-    "education_level": "ensino_medio",
+    "education_level": "medio",
 }
 
 
