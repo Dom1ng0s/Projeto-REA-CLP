@@ -1,13 +1,26 @@
 import logging
-import uuid
 from functools import wraps
 
 import jwt
+from jwt import PyJWKClient
 from flask import current_app, g, request
 
 from src.utils.responses import error
 
 logger = logging.getLogger(__name__)
+
+# Cache de clientes JWKS por URL (reutilizado entre requests).
+_jwks_clients: dict[str, PyJWKClient] = {}
+
+
+def _get_jwks_client() -> PyJWKClient:
+    url = current_app.config["SUPABASE_URL"]
+    if url not in _jwks_clients:
+        _jwks_clients[url] = PyJWKClient(
+            f"{url}/auth/v1/.well-known/jwks.json",
+            cache_keys=True,
+        )
+    return _jwks_clients[url]
 
 
 def _get_bearer_token() -> str | None:
@@ -18,6 +31,17 @@ def _get_bearer_token() -> str | None:
 
 
 def _decode_token(token: str) -> dict:
+    header = jwt.get_unverified_header(token)
+    if header.get("alg") == "RS256":
+        client = _get_jwks_client()
+        signing_key = client.get_signing_key_from_jwt(token)
+        return jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience="authenticated",
+        )
+    # HS256: usado nos testes com secret estático.
     return jwt.decode(
         token,
         current_app.config["SUPABASE_JWT_SECRET"],

@@ -16,11 +16,10 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    if not app.config.get("SUPABASE_JWT_SECRET"):
+    if not app.config.get("SUPABASE_URL"):
         raise RuntimeError(
-            "SUPABASE_JWT_SECRET nao configurado. "
-            "Defina a variavel de ambiente com o JWT Secret do Supabase "
-            "(Dashboard → Settings → API → JWT Settings)."
+            "SUPABASE_URL nao configurado. "
+            "Defina a variavel de ambiente com a URL do projeto Supabase."
         )
 
     CORS(app, origins=app.config["CORS_ORIGINS"])
