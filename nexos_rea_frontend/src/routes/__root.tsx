@@ -13,7 +13,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-
+import { OnboardingModal } from "@/components/OnboardingModal";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -145,6 +145,7 @@ function RootComponent() {
         <div className="flex min-h-screen flex-col bg-background">
           <Header />
           <main className="flex-1">
+            <OnboardingModal />
             <Outlet />
           </main>
         </div>
