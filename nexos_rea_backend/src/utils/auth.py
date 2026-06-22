@@ -30,18 +30,22 @@ def _get_bearer_token() -> str | None:
     return None
 
 
+_JWKS_ALGORITHMS = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256"]
+
+
 def _decode_token(token: str) -> dict:
     header = jwt.get_unverified_header(token)
-    if header.get("alg") == "RS256":
+    # kid presente → token assimétrico do Supabase (RS256, ES256, etc.) via JWKS.
+    if header.get("kid"):
         client = _get_jwks_client()
         signing_key = client.get_signing_key_from_jwt(token)
         return jwt.decode(
             token,
             signing_key.key,
-            algorithms=["RS256"],
+            algorithms=_JWKS_ALGORITHMS,
             audience="authenticated",
         )
-    # HS256: usado nos testes com secret estático.
+    # Sem kid → HS256 com secret estático (testes).
     return jwt.decode(
         token,
         current_app.config["SUPABASE_JWT_SECRET"],
