@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 
 import jwt
-from jwt import PyJWKClient
+from jwt import PyJWKClient, PyJWKClientError
 from flask import current_app, g, request
 
 from src.utils.responses import error
@@ -66,7 +66,7 @@ def jwt_required(fn):
             payload = _decode_token(token)
         except jwt.ExpiredSignatureError:
             return error("Token expirado.", 401)
-        except jwt.InvalidTokenError as exc:
+        except (jwt.InvalidTokenError, PyJWKClientError) as exc:
             logger.error("JWT inválido [%s]: %s", type(exc).__name__, exc)
             return error("Token invalido.", 422)
         g.user_id = payload["sub"]
